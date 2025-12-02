@@ -14,82 +14,180 @@ import {
   PhotographIcon,
 } from "@heroicons/react/outline";
 
-const ProfessionalBusinessSetup = () => {
+const profileSchema = z.object({
+  companyName: z.string().min(2, "Company name must be at least 2 characters"),
+  landline: z.string().min(1, "Landline number is required"),
+  whatsapp: z
+    .string()
+    .min(7, "WhatsApp number must be at least 7 digits")
+    .regex(/^[+\d\s-]+$/, "Invalid WhatsApp number format"),
+  website: z.string().url("Please enter a valid URL (https://...)"),
+  facebook: z.string().url("Please enter a valid Facebook URL"),
+  instagram: z.string().url("Please enter a valid Instagram URL"),
+});
+
+const operatingHourSchema = z.object({
+  day: z.string(),
+  open: z.string().regex(/^\d{2}:\d{2}$/, "Invalid time format (HH:MM)"),
+  close: z.string().regex(/^\d{2}:\d{2}$/, "Invalid time format (HH:MM)"),
+  closed: z.boolean(),
+});
+
+const locationSchema = z.object({
+  address: z.string().min(10, "Address must be at least 10 characters"),
+  pickupRadius: z.preprocess((v) => Number(v), z.number().min(1).max(50)),
+  deliveryRadius: z.preprocess((v) => Number(v), z.number().min(1).max(100)),
+  landmark: z.string().min(3, "Landmark too short"),
+  operatingHours: z.array(operatingHourSchema).length(7),
+});
+
+const deliveryPersonSchema = z.object({
+  id: z.number(),
+  name: z.string().min(3, "Full name must be at least 3 characters"),
+  phone: z.string().min(10, "Phone must be at least 10 digits"),
+  vehicleType: z.enum(["bike", "car", "scooter", "van"]),
+  licenseNumber: z.string().min(5, "License number must be at least 5 characters"),
+});
+const deliverySchema = z.array(deliveryPersonSchema).min(1);
+
+const productSchema = z.object({
+  id: z.number(),
+  name: z.string().min(1),
+  category: z.string().min(1),
+  price: z.preprocess((v) => Number(v), z.number().positive()),
+  urgentPrice: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().positive().nullable()),
+  specialPrice: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().positive().nullable()),
+  imagePreview: z.string().optional(),
+});
+const productsSchema = z.array(productSchema).min(1);
+
+const bundleSchema = z.object({
+  id: z.number(),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  price: z.preprocess((v) => Number(v), z.number().nonnegative()),
+  discount: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+const dateOfferSchema = z.object({
+  id: z.number(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  discountType: z.enum(["percentage", "fixed"]),
+  discountValue: z.preprocess((v) => Number(v), z.number().nonnegative()),
+  minOrder: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
+  isActive: z.boolean().optional(),
+});
+const amountDiscountSchema = z.object({
+  id: z.number(),
+  minAmount: z.preprocess((v) => Number(v), z.number().nonnegative()),
+  discountType: z.enum(["percentage", "fixed"]),
+  discountValue: z.preprocess((v) => Number(v), z.number().nonnegative()),
+  maxDiscount: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
+  isActive: z.boolean().optional(),
+});
+const offersSchema = z.object({
+  bundles: z.array(bundleSchema).optional(),
+  dateOffers: z.array(dateOfferSchema).optional(),
+  amountDiscounts: z.array(amountDiscountSchema).optional(),
+});
+
+const deliveryChargeSchema = z.object({
+  id: z.number(),
+  area: z.string().min(1),
+  baseCharge: z.preprocess((v) => Number(v), z.number().nonnegative()),
+  additionalCharge: z.preprocess((v) => (v === "" ? 0 : Number(v)), z.number().nonnegative()),
+  freeDeliveryAbove: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
+  estimatedTime: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
+  isActive: z.boolean().optional(),
+});
+const deliveryChargesSchema = z.array(deliveryChargeSchema).min(1);
+
+const promotionSchema = z.object({
+  id: z.number(),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  type: z.enum(["banner", "popup", "notification", "email", "sms"]),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  targetAudience: z.enum(["all", "new", "returning", "vip"]).optional(),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  status: z.enum(["active", "inactive"]).optional(),
+});
+const promotionsSchema = z.array(promotionSchema).min(1);
+
+const completeFormSchema = z.object({
+  profile: profileSchema,
+  location: locationSchema,
+  deliveryPersons: deliverySchema,
+  products: productsSchema,
+  offers: offersSchema.optional(),
+  deliveryCharges: deliveryChargesSchema,
+  promotions: promotionsSchema,
+});
+
+const defaultValues = {
+  profile: {
+    companyName: "",
+    landline: "",
+    whatsapp: "",
+    website: "",
+    facebook: "",
+    instagram: "",
+  },
+  location: {
+    address: "",
+    pickupRadius: "5",
+    deliveryRadius: "15",
+    landmark: "",
+    operatingHours: Array(7)
+      .fill()
+      .map((_, index) => ({
+        day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index],
+        open: "09:00",
+        close: "18:00",
+        closed: index === 6,
+      })),
+  },
+  deliveryPersons: [{ id: Date.now(), name: "", phone: "", vehicleType: "bike", licenseNumber: "" }],
+  products: [{ id: Date.now() + 1, name: "", category: "", price: "", urgentPrice: "", specialPrice: "", imagePreview: "" }],
+  offers: { bundles: [], dateOffers: [], amountDiscounts: [] },
+  deliveryCharges: [{ id: Date.now() + 5, area: "", baseCharge: "", additionalCharge: "", freeDeliveryAbove: "", estimatedTime: "", isActive: true }],
+  promotions: [{ id: Date.now() + 6, title: "", description: "", type: "banner", startDate: "", endDate: "", targetAudience: "all", priority: "medium", status: "active" }],
+};
+
+export default function ProfessionalBusinessSetup() {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("profile");
   const [completedSections, setCompletedSections] = useState(new Set());
-  const navigate = useNavigate();
 
-  // Gray color palette
-  const colors = {
-    background: "#F8F9FA",
-    card: "#FFFFFF",
-    border: "#EBEDEF",
-    accent: "#CED3D8",
-    textPrimary: "#808A93",
-    textSecondary: "#95A1AC",
-    success: "#10B981",
-    hover: "#BDC4CB"
-  };
-
-  // Consolidated form state
-  const [formData, setFormData] = useState({
-    profile: {
-      companyName: "",
-      landline: "",
-      whatsapp: "",
-      website: "",
-      facebook: "",
-      instagram: "",
-    },
-    location: {
-      address: "",
-      pickupRadius: "5",
-      deliveryRadius: "15",
-      landmark: "",
-      operatingHours: Array(7).fill().map((_, index) => ({
-        day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][index],
-        open: '09:00',
-        close: '18:00',
-        closed: index === 6
-      }))
-    },
-    deliveryPersons: [
-      { id: 1, name: "", phone: "", vehicleType: "bike", licenseNumber: "" },
-    ],
-    products: [
-      { id: 1, name: "", category: "", price: "", urgentPrice: "", specialPrice: "", imagePreview: "" },
-    ],
-    offers: {
-      bundles: [{ id: 1, name: "", description: "", price: "", discount: "", isActive: true }],
-      dateOffers: [{ id: 1, name: "", description: "", startDate: "", endDate: "", discountType: "percentage", discountValue: "", minOrder: "", isActive: true }],
-      amountDiscounts: [{ id: 1, minAmount: "", discountType: "percentage", discountValue: "", maxDiscount: "", isActive: true }],
-    },
-    deliveryCharges: [
-      { id: 1, area: "", baseCharge: "", additionalCharge: "", freeDeliveryAbove: "", estimatedTime: "", isActive: true },
-    ],
-    promotions: [
-      { id: 1, title: "", description: "", type: "banner", startDate: "", endDate: "", targetAudience: "all", priority: "medium", status: "active" },
-    ],
+  const {
+    control,
+    handleSubmit,
+    getValues,
+    setValue,
+    formState: { errors, isValid },
+    trigger,
+    clearErrors,
+  } = useForm({
+    defaultValues,
+    mode: "onChange",
+    resolver: zodResolver(completeFormSchema),
   });
 
-  const sections = [
-    { id: "profile", title: "Profile Details", icon: UserIcon },
-    { id: "location", title: "Location & Hours", icon: LocationMarkerIcon },
-    { id: "delivery", title: "Delivery Team", icon: TruckIcon },
-    { id: "products", title: "Products/Services", icon: TagIcon },
-    { id: "offers", title: "Offers & Discounts", icon: GiftIcon },
-    { id: "delivery-charges", title: "Delivery Charges", icon: CurrencyDollarIcon },
-    { id: "promotions", title: "Promotions", icon: FireIcon },
-  ];
-
-  const markSectionComplete = (sectionId) => {
-    setCompletedSections((prev) => new Set(prev).add(sectionId));
+  const getErrorMessage = (path) => {
+    if (!errors) return null;
+    const parts = path.split(".");
+    let cur = errors;
+    for (const part of parts) {
+      if (!cur) return null;
+      cur = cur[part];
+    }
+    return cur?.message ?? null;
   };
 
-  const totalSections = sections.length;
-  const progress = Math.round((completedSections.size / totalSections) * 100);
-
-  // Generic handlers for array operations
   const addItem = (section, item) => {
     setFormData(prev => ({
       ...prev,
@@ -105,10 +203,10 @@ const ProfessionalBusinessSetup = () => {
   };
 
   const updateItem = (section, index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: prev[section].map((item, i) => i === index ? { ...item, [field]: value } : item)
-    }));
+    const arr = [...getValues(section)];
+    arr[index] = { ...arr[index], [field]: value };
+    setValue(section, arr, { shouldDirty: true, shouldValidate: true });
+    trigger(`${section}.${index}.${field}`);
   };
 
   const updateNestedItem = (section, subsection, index, field, value) => {
@@ -238,48 +336,51 @@ const ProfessionalBusinessSetup = () => {
     </div>
   );
 
-  const ActionButton = ({ onClick, children, variant = "primary", className = "" }) => {
-    const baseStyles = "px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2";
-    const variants = {
-      primary: `text-white ${className}`,
-      secondary: `border ${className}`,
-    };
-
-    const buttonStyles = variant === "primary" 
-      ? { backgroundColor: colors.textPrimary, color: colors.card }
-      : { 
-          borderColor: colors.border, 
-          color: colors.textPrimary,
-          backgroundColor: colors.card
-        };
-
-    return (
-      <button
-        onClick={onClick}
-        className={`${baseStyles} ${variants[variant]} hover:opacity-90`}
-        style={buttonStyles}
-      >
-        {children}
-      </button>
-    );
+  const onSaveAndContinue = async () => {
+    const ok = await validateCurrentSection();
+    if (!ok) return;
+    const seq = ["profile", "location", "deliveryPersons", "products", "offers", "deliveryCharges", "promotions"];
+    const idx = seq.indexOf(activeSection);
+    const next = seq[idx + 1];
+    if (next) setActiveSection(next);
   };
 
-  const SectionLayout = ({ title, description, icon: Icon, children, onNext, onBack, isFirst = false, actionButton }) => (
-    <Card>
-      <SectionHeader title={title} description={description} icon={Icon} actionButton={actionButton} />
-      {children}
-      <div className={`flex ${isFirst ? 'justify-end' : 'justify-between'} mt-6`}>
-        {!isFirst && (
-          <ActionButton variant="secondary" onClick={onBack}>
-            Back
-          </ActionButton>
-        )}
-        <ActionButton onClick={onNext}>
-          {activeSection === "promotions" ? "Complete Setup" : "Save & Continue"}
-        </ActionButton>
-      </div>
-    </Card>
-  );
+  const onSubmit = async (data) => {
+   
+    try {
+      console.log("Submitting payload:", data);
+      alert("Business setup completed successfully!");
+      navigate("/sidebar");
+    } catch (err) {
+      console.error("Submission error", err);
+      alert("An error occurred. Please try again.");
+    }
+  };
+
+  const gray = {
+    bg: "#F6F7F8",
+    card: "#FFFFFF",
+    border: "#E6E8EA",
+    text: "#6B6F74",
+    subtle: "#9AA0A6",
+    muted: "#BFC6CA",
+    button: "#D9DDE0",
+    buttonText: "#333438",
+    success: "#6BAF84",
+    error: "#E53E3E",
+  };
+
+  const sections = [
+    { id: "profile", title: "Profile Details", icon: UserIcon },
+    { id: "location", title: "Location & Hours", icon: LocationMarkerIcon },
+    { id: "deliveryPersons", title: "Delivery Team", icon: TruckIcon },
+    { id: "products", title: "Products/Services", icon: TagIcon },
+    { id: "offers", title: "Offers & Discounts", icon: GiftIcon },
+    { id: "deliveryCharges", title: "Delivery Charges", icon: CurrencyDollarIcon },
+    { id: "promotions", title: "Promotions", icon: FireIcon },
+  ];
+
+  const allSectionsCompleted = completedSections.size === sections.length || isValid;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>

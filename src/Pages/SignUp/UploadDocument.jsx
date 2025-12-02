@@ -150,6 +150,11 @@ const ProfessionalDocumentUpload = () => {
     return "Pending";
   };
 
+  const requiredMissing = Object.entries(documentConfig)
+    .filter(([, cfg]) => cfg.required)
+    .map(([k]) => k)
+    .filter((k) => !(docs?.[k] instanceof File));
+
   return (
     <div className="min-h-screen bg-[#FAFBFB] py-10 px-4">
       <div className="max-w-6xl mx-auto">
