@@ -2,18 +2,24 @@
 import React, { useState } from "react";
 import {
   ShoppingBagIcon,
-  TruckIcon,
-  LocationMarkerIcon,
-  SwitchHorizontalIcon,
-  SearchIcon,
-  CubeIcon,
-  UserCircleIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  BellIcon,
+  HomeIcon,
   ChartBarIcon,
   CogIcon,
-} from "@heroicons/react/outline";
+  BellIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
+  CalendarIcon,
+  QuestionMarkCircleIcon,
+  ArrowRightOnRectangleIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  TruckIcon,
+  MapPinIcon,
+  ArrowsRightLeftIcon,
+  MagnifyingGlassIcon,
+  CubeIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 
 const menuConfig = [
   {
@@ -31,19 +37,19 @@ const menuConfig = [
   {
     id: "delivery-requested",
     label: "Delivery Requested",
-    icon: LocationMarkerIcon,
+    icon: MapPinIcon,
     items: ["Delivery requested", "Delivery tracking", "Delivery issues"],
   },
   {
     id: "customer-dropoff",
     label: "Customer Pickup/Drop-off",
-    icon: SwitchHorizontalIcon,
+    icon: ArrowsRightLeftIcon,
     items: ["Pickup / drop-off by customer", "Customer locations", "Time slots"],
   },
   {
     id: "search",
     label: "Search & Analytics",
-    icon: SearchIcon,
+    icon: MagnifyingGlassIcon,
     items: ["Quick Search", "Advanced filters", "Analytics dashboard"],
   },
 ];
@@ -178,7 +184,7 @@ const Sidebar = () => {
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200
                   ${
                     selectedItem === item
-                      ? "bg-[#F8F9FA] border border-[#EBEDEF] text-gray-900 font-medium"
+                      ? "bg-[#F8F9FA] font-medium"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
               >

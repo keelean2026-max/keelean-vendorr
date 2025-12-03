@@ -1,18 +1,70 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   PlusIcon,
   TrashIcon,
-  LocationMarkerIcon,
+  MapPinIcon,
   TruckIcon,
   TagIcon,
   CurrencyDollarIcon,
-  UserIcon,
+  UserCircleIcon,
   CheckCircleIcon,
   GiftIcon,
   FireIcon,
-  PhotographIcon,
-} from "@heroicons/react/outline";
+  PhotoIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  BuildingStorefrontIcon,
+  ClockIcon,
+  UsersIcon,
+  CubeIcon,
+  ExclamationCircleIcon,
+  PencilIcon,
+  XMarkIcon,
+  DocumentTextIcon,
+  CalendarIcon,
+  ChartBarIcon,
+  ShoppingBagIcon,
+} from "@heroicons/react/24/outline";
+const colors = {
+  background: "#FFFFFF",
+  card: "#F8F9FA",
+    borderLight: "#F3F4F6",
+  border: "#9CA3AF", 
+  borderDark: "#9CA3AF",
+  divider: "#E5E7EB",
+
+    textPrimary: "#111827",
+  textSecondary: "#374151",
+  textTertiary: "#6B7280",
+  textMuted: "#9CA3AF",
+  textDisabled: "#D1D5DB",
+  textInverse: "#FFFFFF",
+  
+  buttonPrimary: "#374151",
+  buttonPrimaryHover: "#1F2937",
+  buttonSecondary: "#F3F4F6",
+  buttonSecondaryHover: "#E5E7EB",
+  buttonText: "#FFFFFF",
+  buttonTextSecondary: "#374151",
+  buttonDisabled: "#E5E7EB",
+  
+  // Status
+  accentLight: "#F3F4F6",
+  accent: "#6B7280",
+  accentDark: "#374151",
+  success: "#10B981",
+  error: "#EF4444",
+  warning: "#F59E0B",
+  info: "#3B82F6",
+  
+  hover: "rgba(0, 0, 0, 0.04)",
+  active: "rgba(0, 0, 0, 0.08)",
+  selected: "rgba(0, 0, 0, 0.12)",
+};
 
 const profileSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -21,9 +73,9 @@ const profileSchema = z.object({
     .string()
     .min(7, "WhatsApp number must be at least 7 digits")
     .regex(/^[+\d\s-]+$/, "Invalid WhatsApp number format"),
-  website: z.string().url("Please enter a valid URL (https://...)"),
-  facebook: z.string().url("Please enter a valid Facebook URL"),
-  instagram: z.string().url("Please enter a valid Instagram URL"),
+  website: z.string().url("Please enter a valid URL (https://...)").optional().or(z.literal("")),
+  facebook: z.string().url("Please enter a valid Facebook URL").optional().or(z.literal("")),
+  instagram: z.string().url("Please enter a valid Instagram URL").optional().or(z.literal("")),
 });
 
 const operatingHourSchema = z.object({
@@ -35,8 +87,8 @@ const operatingHourSchema = z.object({
 
 const locationSchema = z.object({
   address: z.string().min(10, "Address must be at least 10 characters"),
-  pickupRadius: z.preprocess((v) => Number(v), z.number().min(1).max(50)),
-  deliveryRadius: z.preprocess((v) => Number(v), z.number().min(1).max(100)),
+  pickupRadius: z.coerce.number().min(1).max(50),
+  deliveryRadius: z.coerce.number().min(1).max(100),
   landmark: z.string().min(3, "Landmark too short"),
   operatingHours: z.array(operatingHourSchema).length(7),
 });
@@ -48,84 +100,85 @@ const deliveryPersonSchema = z.object({
   vehicleType: z.enum(["bike", "car", "scooter", "van"]),
   licenseNumber: z.string().min(5, "License number must be at least 5 characters"),
 });
-const deliverySchema = z.array(deliveryPersonSchema).min(1);
 
 const productSchema = z.object({
   id: z.number(),
-  name: z.string().min(1),
-  category: z.string().min(1),
-  price: z.preprocess((v) => Number(v), z.number().positive()),
-  urgentPrice: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().positive().nullable()),
-  specialPrice: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().positive().nullable()),
+  name: z.string().min(1, "Product name is required"),
+  category: z.string().min(1, "Category is required"),
+  price: z.coerce.number().positive("Price must be positive"),
+  urgentPrice: z.coerce.number().positive("Price must be positive").optional().nullable(),
+  specialPrice: z.coerce.number().positive("Price must be positive").optional().nullable(),
   imagePreview: z.string().optional(),
 });
-const productsSchema = z.array(productSchema).min(1);
 
 const bundleSchema = z.object({
   id: z.number(),
-  name: z.string().min(1),
-  description: z.string().min(1),
-  price: z.preprocess((v) => Number(v), z.number().nonnegative()),
+  name: z.string().min(1, "Bundle name is required"),
+  description: z.string().min(1, "Description is required"),
+  price: z.coerce.number().nonnegative("Price must be non-negative"),
   discount: z.string().optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.boolean().default(true),
 });
+
 const dateOfferSchema = z.object({
   id: z.number(),
-  name: z.string().min(1),
+  name: z.string().min(1, "Offer name is required"),
   description: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
   discountType: z.enum(["percentage", "fixed"]),
-  discountValue: z.preprocess((v) => Number(v), z.number().nonnegative()),
-  minOrder: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
-  isActive: z.boolean().optional(),
+  discountValue: z.coerce.number().nonnegative("Discount value is required"),
+  minOrder: z.coerce.number().nonnegative("Minimum order must be non-negative").optional().nullable(),
+  isActive: z.boolean().default(true),
 });
+
 const amountDiscountSchema = z.object({
   id: z.number(),
-  minAmount: z.preprocess((v) => Number(v), z.number().nonnegative()),
+  minAmount: z.coerce.number().nonnegative("Minimum amount is required"),
   discountType: z.enum(["percentage", "fixed"]),
-  discountValue: z.preprocess((v) => Number(v), z.number().nonnegative()),
-  maxDiscount: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
-  isActive: z.boolean().optional(),
-});
-const offersSchema = z.object({
-  bundles: z.array(bundleSchema).optional(),
-  dateOffers: z.array(dateOfferSchema).optional(),
-  amountDiscounts: z.array(amountDiscountSchema).optional(),
+  discountValue: z.coerce.number().nonnegative("Discount value is required"),
+  maxDiscount: z.coerce.number().nonnegative("Max discount must be non-negative").optional().nullable(),
+  isActive: z.boolean().default(true),
 });
 
 const deliveryChargeSchema = z.object({
   id: z.number(),
-  area: z.string().min(1),
-  baseCharge: z.preprocess((v) => Number(v), z.number().nonnegative()),
-  additionalCharge: z.preprocess((v) => (v === "" ? 0 : Number(v)), z.number().nonnegative()),
-  freeDeliveryAbove: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
-  estimatedTime: z.preprocess((v) => (v === "" ? null : Number(v)), z.number().nullable().optional()),
-  isActive: z.boolean().optional(),
+  area: z.string().min(1, "Area name is required"),
+  baseCharge: z.coerce.number().nonnegative("Base charge is required"),
+  additionalCharge: z.coerce.number().nonnegative("Additional charge must be non-negative").default(0),
+  freeDeliveryAbove: z.coerce.number().nonnegative("Must be non-negative").optional().nullable(),
+  estimatedTime: z.coerce.number().nonnegative("Estimated time must be non-negative").optional().nullable(),
+  isActive: z.boolean().default(true),
 });
-const deliveryChargesSchema = z.array(deliveryChargeSchema).min(1);
 
 const promotionSchema = z.object({
   id: z.number(),
-  title: z.string().min(1),
-  description: z.string().min(1),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
   type: z.enum(["banner", "popup", "notification", "email", "sms"]),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  targetAudience: z.enum(["all", "new", "returning", "vip"]).optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-  status: z.enum(["active", "inactive"]).optional(),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
+  targetAudience: z.enum(["all", "new", "returning", "vip"]).default("all"),
+  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  status: z.enum(["active", "inactive"]).default("active"),
 });
-const promotionsSchema = z.array(promotionSchema).min(1);
 
 const completeFormSchema = z.object({
   profile: profileSchema,
   location: locationSchema,
-  deliveryPersons: deliverySchema,
-  products: productsSchema,
-  offers: offersSchema.optional(),
-  deliveryCharges: deliveryChargesSchema,
-  promotions: promotionsSchema,
+  deliveryPersons: z.array(deliveryPersonSchema).min(1, "At least one delivery person is required"),
+  products: z.array(productSchema).min(1, "At least one product is required"),
+  offers: z.object({
+    bundles: z.array(bundleSchema).default([]),
+    dateOffers: z.array(dateOfferSchema).default([]),
+    amountDiscounts: z.array(amountDiscountSchema).default([]),
+  }).default({
+    bundles: [],
+    dateOffers: [],
+    amountDiscounts: [],
+  }),
+  deliveryCharges: z.array(deliveryChargeSchema).min(1, "At least one delivery charge is required"),
+  promotions: z.array(promotionSchema).min(1, "At least one promotion is required"),
 });
 
 const defaultValues = {
@@ -139,8 +192,8 @@ const defaultValues = {
   },
   location: {
     address: "",
-    pickupRadius: "5",
-    deliveryRadius: "15",
+    pickupRadius: 5,
+    deliveryRadius: 15,
     landmark: "",
     operatingHours: Array(7)
       .fill()
@@ -151,228 +204,289 @@ const defaultValues = {
         closed: index === 6,
       })),
   },
-  deliveryPersons: [{ id: Date.now(), name: "", phone: "", vehicleType: "bike", licenseNumber: "" }],
-  products: [{ id: Date.now() + 1, name: "", category: "", price: "", urgentPrice: "", specialPrice: "", imagePreview: "" }],
-  offers: { bundles: [], dateOffers: [], amountDiscounts: [] },
-  deliveryCharges: [{ id: Date.now() + 5, area: "", baseCharge: "", additionalCharge: "", freeDeliveryAbove: "", estimatedTime: "", isActive: true }],
-  promotions: [{ id: Date.now() + 6, title: "", description: "", type: "banner", startDate: "", endDate: "", targetAudience: "all", priority: "medium", status: "active" }],
+  deliveryPersons: [
+    {
+      id: Date.now(),
+      name: "",
+      phone: "",
+      vehicleType: "bike",
+      licenseNumber: "",
+    },
+  ],
+  products: [
+    {
+      id: Date.now() + 1,
+      name: "",
+      category: "",
+      price: 0,
+      urgentPrice: null,
+      specialPrice: null,
+      imagePreview: "",
+    },
+  ],
+  offers: {
+    bundles: [
+      {
+        id: Date.now() + 2,
+        name: "",
+        description: "",
+        price: 0,
+        discount: "",
+        isActive: true,
+      },
+    ],
+    dateOffers: [
+      {
+        id: Date.now() + 3,
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        discountType: "percentage",
+        discountValue: 0,
+        minOrder: null,
+        isActive: true,
+      },
+    ],
+    amountDiscounts: [
+      {
+        id: Date.now() + 4,
+        minAmount: 0,
+        discountType: "percentage",
+        discountValue: 0,
+        maxDiscount: null,
+        isActive: true,
+      },
+    ],
+  },
+  deliveryCharges: [
+    {
+      id: Date.now() + 5,
+      area: "",
+      baseCharge: 0,
+      additionalCharge: 0,
+      freeDeliveryAbove: null,
+      estimatedTime: null,
+      isActive: true,
+    },
+  ],
+  promotions: [
+    {
+      id: Date.now() + 6,
+      title: "",
+      description: "",
+      type: "banner",
+      startDate: "",
+      endDate: "",
+      targetAudience: "all",
+      priority: "medium",
+      status: "active",
+    },
+  ],
 };
 
-export default function ProfessionalBusinessSetup() {
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("profile");
-  const [completedSections, setCompletedSections] = useState(new Set());
-
-  const {
-    control,
-    handleSubmit,
-    getValues,
-    setValue,
-    formState: { errors, isValid },
-    trigger,
-    clearErrors,
-  } = useForm({
-    defaultValues,
-    mode: "onChange",
-    resolver: zodResolver(completeFormSchema),
-  });
-
-  const getErrorMessage = (path) => {
-    if (!errors) return null;
-    const parts = path.split(".");
-    let cur = errors;
-    for (const part of parts) {
-      if (!cur) return null;
-      cur = cur[part];
-    }
-    return cur?.message ?? null;
-  };
-
-  const addItem = (section, item) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: [...prev[section], { ...item, id: Date.now() }]
-    }));
-  };
-
-  const removeItem = (section, id) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: prev[section].length > 1 ? prev[section].filter(item => item.id !== id) : prev[section]
-    }));
-  };
-
-  const updateItem = (section, index, field, value) => {
-    const arr = [...getValues(section)];
-    arr[index] = { ...arr[index], [field]: value };
-    setValue(section, arr, { shouldDirty: true, shouldValidate: true });
-    trigger(`${section}.${index}.${field}`);
-  };
-
-  const updateNestedItem = (section, subsection, index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [subsection]: prev[section][subsection].map((item, i) => 
-          i === index ? { ...item, [field]: value } : item
-        )
-      }
-    }));
-  };
-
-  const updateField = (section, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: { ...prev[section], [field]: value }
-    }));
-  };
-
-  // Image upload handler
-  const handleImageUpload = (id, event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFormData(prev => ({
-          ...prev,
-          products: prev.products.map(product => 
-            product.id === id ? { ...product, imagePreview: e.target.result } : product
-          )
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Reusable Components
-  const SectionHeader = ({ title, description, icon: Icon, actionButton }) => (
-    <div className="flex items-center justify-between mb-6">
+const SectionLayout = ({ 
+  title, 
+  description, 
+  icon: Icon, 
+  children, 
+  onNext, 
+  onBack, 
+  isFirst = false, 
+  isLast = false,
+  actionButton 
+}) => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <Icon className="w-6 h-6" style={{ color: colors.textPrimary }} />
         <div>
           <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
             {title}
           </h2>
-          <p style={{ color: colors.textSecondary }}>{description}</p>
+          <p className="text-sm" style={{ color: colors.textSecondary }}>{description}</p>
         </div>
       </div>
       {actionButton}
     </div>
-  );
 
-  const InputField = ({ label, value, onChange, placeholder, type = "text", required = false, className = "", ...props }) => (
+    <div className="space-y-6">{children}</div>
+
+    <div className="flex justify-between pt-6">
+      {!isFirst && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-4 py-2 rounded-lg border flex items-center gap-2 transition-colors hover:bg-gray-50 bg-white border-gray-400"
+          style={{ color: colors.textPrimary }}
+        >
+          <ChevronLeftIcon className="w-4 h-4" />
+          Back
+        </button>
+      )}
+      <div className="flex-1" />
+      <button
+        type="button"
+        onClick={onNext}
+        className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90 border border-gray-400"
+        style={{ backgroundColor: colors.accent, color: "#FFFFFF" }}
+      >
+        {isLast ? "Complete Setup" : "Next"}
+      </button>
+    </div>
+  </div>
+);
+
+const InputField = ({ 
+  label, 
+  name, 
+  register, 
+  errors, 
+  placeholder, 
+  type = "text", 
+  required = false, 
+  className = "",
+  ...props 
+}) => {
+  const error = name.split('.').reduce((obj, key) => obj?.[key], errors);
+  
+  return (
     <div className={className}>
       <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
         {label}{required && " *"}
       </label>
       <input
         type={type}
-        className="w-full px-3 py-2 rounded-lg border transition-colors focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
-        style={{ 
-          borderColor: colors.border,
-          backgroundColor: colors.card
-        }}
-        value={value}
-        onChange={onChange}
+        {...register(name, { required: required && `${label} is required` })}
+        className={`w-full px-3 py-2 rounded-lg border border-gray-400 transition-colors focus:ring-2 focus:outline-none focus:border-gray-500 focus:ring-gray-500 ${
+          error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-400"
+        }`}
+        style={{ backgroundColor: colors.card }}
         placeholder={placeholder}
-        required={required}
         {...props}
       />
+      {error && (
+        <p className="mt-1 text-xs text-red-600">{error.message}</p>
+      )}
     </div>
   );
+};
 
-  const SelectField = ({ label, value, onChange, options, required = false, className = "" }) => (
+const SelectField = ({ 
+  label, 
+  name, 
+  register, 
+  errors, 
+  options, 
+  required = false, 
+  className = "" 
+}) => {
+  const error = name.split('.').reduce((obj, key) => obj?.[key], errors);
+  
+  return (
     <div className={className}>
       <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
         {label}{required && " *"}
       </label>
       <select
-        className="w-full px-3 py-2 rounded-lg border transition-colors focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
-        style={{ 
-          borderColor: colors.border,
-          backgroundColor: colors.card
-        }}
-        value={value}
-        onChange={onChange}
-        required={required}
+        {...register(name, { required: required && `${label} is required` })}
+        className={`w-full px-3 py-2 rounded-lg border border-gray-400 transition-colors focus:ring-2 focus:outline-none focus:border-gray-500 focus:ring-gray-500 ${
+          error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-400"
+        }`}
+        style={{ backgroundColor: colors.card }}
       >
         {options.map(option => (
-          <option key={option.value} value={option.value}>{option.label}</option>
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
         ))}
       </select>
+      {error && (
+        <p className="mt-1 text-xs text-red-600">{error.message}</p>
+      )}
     </div>
   );
+};
 
-  const TextAreaField = ({ label, value, onChange, placeholder, required = false, className = "", rows = 3 }) => (
+const TextAreaField = ({ 
+  label, 
+  name, 
+  register, 
+  errors, 
+  placeholder, 
+  required = false, 
+  className = "", 
+  rows = 3 
+}) => {
+  const error = name.split('.').reduce((obj, key) => obj?.[key], errors);
+  
+  return (
     <div className={className}>
       <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
         {label}{required && " *"}
       </label>
       <textarea
         rows={rows}
-        className="w-full px-3 py-2 rounded-lg border transition-colors focus:ring-2 focus:ring-gray-400 focus:border-gray-400 resize-none"
-        style={{ 
-          borderColor: colors.border,
-          backgroundColor: colors.card
-        }}
-        value={value}
-        onChange={onChange}
+        {...register(name, { required: required && `${label} is required` })}
+        className={`w-full px-3 py-2 rounded-lg border border-gray-400 transition-colors focus:ring-2 focus:outline-none resize-none focus:border-gray-500 focus:ring-gray-500 ${
+          error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-400"
+        }`}
+        style={{ backgroundColor: colors.card }}
         placeholder={placeholder}
-        required={required}
       />
+      {error && (
+        <p className="mt-1 text-xs text-red-600">{error.message}</p>
+      )}
     </div>
   );
+};
 
-  const Card = ({ children, className = "" }) => (
-    <div 
-      className={`rounded-lg border p-4 ${className}`}
-      style={{ 
-        borderColor: colors.border,
-        backgroundColor: colors.card
-      }}
-    >
-      {children}
-    </div>
-  );
+const Card = ({ children, className = "" }) => (
+  <div 
+    className={`rounded-lg border border-gray-400 p-4 ${className}`}
+    style={{ 
+      backgroundColor: colors.card
+    }}
+  >
+    {children}
+  </div>
+);
 
-  const onSaveAndContinue = async () => {
-    const ok = await validateCurrentSection();
-    if (!ok) return;
-    const seq = ["profile", "location", "deliveryPersons", "products", "offers", "deliveryCharges", "promotions"];
-    const idx = seq.indexOf(activeSection);
-    const next = seq[idx + 1];
-    if (next) setActiveSection(next);
-  };
+const ActionButton = ({ children, onClick, className = "" }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`px-3 py-2 rounded-lg border border-gray-400 flex items-center gap-2 text-sm font-medium transition-colors hover:bg-gray-50 ${className}`}
+    style={{ color: colors.textPrimary }}
+  >
+    {children}
+  </button>
+);
 
-  const onSubmit = async (data) => {
-   
-    try {
-      console.log("Submitting payload:", data);
-      alert("Business setup completed successfully!");
-      navigate("/sidebar");
-    } catch (err) {
-      console.error("Submission error", err);
-      alert("An error occurred. Please try again.");
-    }
-  };
+export default function ProfessionalBusinessSetup() {
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState("profile");
+  const [completedSections, setCompletedSections] = useState(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const gray = {
-    bg: "#F6F7F8",
-    card: "#FFFFFF",
-    border: "#E6E8EA",
-    text: "#6B6F74",
-    subtle: "#9AA0A6",
-    muted: "#BFC6CA",
-    button: "#D9DDE0",
-    buttonText: "#333438",
-    success: "#6BAF84",
-    error: "#E53E3E",
-  };
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isValid },
+    watch,
+    setValue,
+    getValues,
+    trigger,
+  } = useForm({
+    defaultValues,
+    resolver: zodResolver(completeFormSchema),
+    mode: "onChange",
+  });
 
   const sections = [
-    { id: "profile", title: "Profile Details", icon: UserIcon },
-    { id: "location", title: "Location & Hours", icon: LocationMarkerIcon },
+    { id: "profile", title: "Profile Details", icon: UserCircleIcon },
+    { id: "location", title: "Location & Hours", icon: MapPinIcon },
     { id: "deliveryPersons", title: "Delivery Team", icon: TruckIcon },
     { id: "products", title: "Products/Services", icon: TagIcon },
     { id: "offers", title: "Offers & Discounts", icon: GiftIcon },
@@ -380,14 +494,217 @@ export default function ProfessionalBusinessSetup() {
     { id: "promotions", title: "Promotions", icon: FireIcon },
   ];
 
-  const allSectionsCompleted = completedSections.size === sections.length || isValid;
+  // Calculate progress
+  const progress = Math.round((completedSections.size / sections.length) * 100);
+
+  const markSectionComplete = (sectionId) => {
+    setCompletedSections(prev => new Set([...prev, sectionId]));
+  };
+
+  const validateCurrentSection = async () => {
+    let sectionFields = [];
+    
+    switch (activeSection) {
+      case "profile":
+        sectionFields = ["profile.companyName", "profile.landline", "profile.whatsapp"];
+        break;
+      case "location":
+        sectionFields = ["location.address", "location.pickupRadius", "location.deliveryRadius"];
+        break;
+      case "deliveryPersons":
+        sectionFields = ["deliveryPersons"];
+        break;
+      case "products":
+        sectionFields = ["products"];
+        break;
+      case "offers":
+        sectionFields = ["offers"];
+        break;
+      case "deliveryCharges":
+        sectionFields = ["deliveryCharges"];
+        break;
+      case "promotions":
+        sectionFields = ["promotions"];
+        break;
+    }
+
+    const result = await trigger(sectionFields);
+    if (result) {
+      markSectionComplete(activeSection);
+    }
+    return result;
+  };
+
+  const goToNextSection = async () => {
+    const isValid = await validateCurrentSection();
+    if (!isValid) return;
+
+    const currentIndex = sections.findIndex(s => s.id === activeSection);
+    if (currentIndex < sections.length - 1) {
+      setActiveSection(sections[currentIndex + 1].id);
+    }
+  };
+
+  const goToPreviousSection = () => {
+    const currentIndex = sections.findIndex(s => s.id === activeSection);
+    if (currentIndex > 0) {
+      setActiveSection(sections[currentIndex - 1].id);
+    }
+  };
+
+  const onSubmit = async (data) => {
+    setIsSubmitting(true);
+    try {
+      console.log("Form submitted:", data);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      alert("Business setup completed successfully!");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper functions for dynamic arrays
+  const addDeliveryPerson = () => {
+    const current = getValues("deliveryPersons");
+    setValue("deliveryPersons", [
+      ...current,
+      {
+        id: Date.now(),
+        name: "",
+        phone: "",
+        vehicleType: "bike",
+        licenseNumber: "",
+      },
+    ]);
+  };
+
+  const removeDeliveryPerson = (index) => {
+    const current = getValues("deliveryPersons");
+    if (current.length > 1) {
+      setValue("deliveryPersons", current.filter((_, i) => i !== index));
+    }
+  };
+
+  const addProduct = () => {
+    const current = getValues("products");
+    setValue("products", [
+      ...current,
+      {
+        id: Date.now(),
+        name: "",
+        category: "",
+        price: 0,
+        urgentPrice: null,
+        specialPrice: null,
+        imagePreview: "",
+      },
+    ]);
+  };
+
+  const removeProduct = (index) => {
+    const current = getValues("products");
+    if (current.length > 1) {
+      setValue("products", current.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleImageUpload = (index, event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const current = getValues("products");
+        const updated = [...current];
+        updated[index] = { ...updated[index], imagePreview: e.target.result };
+        setValue("products", updated);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addBundle = () => {
+    const current = getValues("offers.bundles");
+    setValue("offers.bundles", [
+      ...current,
+      {
+        id: Date.now(),
+        name: "",
+        description: "",
+        price: 0,
+        discount: "",
+        isActive: true,
+      },
+    ]);
+  };
+
+  const addDateOffer = () => {
+    const current = getValues("offers.dateOffers");
+    setValue("offers.dateOffers", [
+      ...current,
+      {
+        id: Date.now(),
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        discountType: "percentage",
+        discountValue: 0,
+        minOrder: null,
+        isActive: true,
+      },
+    ]);
+  };
+
+  const addAmountDiscount = () => {
+    const current = getValues("offers.amountDiscounts");
+    setValue("offers.amountDiscounts", [
+      ...current,
+      {
+        id: Date.now(),
+        minAmount: 0,
+        discountType: "percentage",
+        discountValue: 0,
+        maxDiscount: null,
+        isActive: true,
+      },
+    ]);
+  };
+
+  const addDeliveryCharge = () => {
+    const current = getValues("deliveryCharges");
+    setValue("deliveryCharges", [
+      ...current,
+      {
+        id: Date.now(),
+        area: "",
+        baseCharge: 0,
+        additionalCharge: 0,
+        freeDeliveryAbove: null,
+        estimatedTime: null,
+        isActive: true,
+      },
+    ]);
+  };
+
+  const removeDeliveryCharge = (index) => {
+    const current = getValues("deliveryCharges");
+    if (current.length > 1) {
+      setValue("deliveryCharges", current.filter((_, i) => i !== index));
+    }
+  };
+
+  const formValues = watch();
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50" style={{ backgroundColor: colors.card }}>
       <div style={{ backgroundColor: colors.card, borderBottom: `1px solid ${colors.border}` }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center py-6 gap-4">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
                 Business Setup
@@ -396,10 +713,10 @@ export default function ProfessionalBusinessSetup() {
                 Complete your business profile to start accepting orders
               </p>
             </div>
-            <div className="p-3 rounded-xl border" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
+            <div className="p-3 rounded-xl border border-gray-400" style={{ backgroundColor: colors.card }}>
               <div className="text-sm mb-1" style={{ color: colors.textSecondary }}>Setup Progress</div>
               <div className="flex items-center gap-3">
-                <div className="w-32 rounded-full h-2" style={{ backgroundColor: colors.accent }}>
+                <div className="w-32 rounded-full h-2" style={{ backgroundColor: colors.border }}>
                   <div
                     className="h-2 rounded-full transition-all duration-300"
                     style={{ 
@@ -417,27 +734,30 @@ export default function ProfessionalBusinessSetup() {
         </div>
       </div>
 
-      {/* Body */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-64 shrink-0">
-            <Card className="sticky top-8">
+            <div 
+              className="rounded-lg border border-gray-400 p-4 sticky top-8"
+              style={{ 
+                backgroundColor: colors.card
+              }}
+            >
               <nav className="space-y-2">
                 {sections.map((section) => (
                   <button
                     key={section.id}
+                    type="button"
                     onClick={() => setActiveSection(section.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeSection === section.id
-                        ? "border"
+                        ? "border border-gray-400"
                         : "hover:opacity-80"
                     }`}
                     style={
                       activeSection === section.id
                         ? {
                             backgroundColor: colors.background,
-                            borderColor: colors.border,
                             color: colors.textPrimary
                           }
                         : { color: colors.textSecondary }
@@ -452,203 +772,206 @@ export default function ProfessionalBusinessSetup() {
                 ))}
               </nav>
 
-              <div className="mt-6 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background }}>
+              <div className="mt-6 p-3 rounded-lg border border-gray-400" style={{ backgroundColor: colors.background }}>
                 <div className="text-xs" style={{ color: colors.textPrimary }}>
                   <div className="font-medium mb-1">Quick Tips</div>
-                  <ul className="space-y-1">
+                  <ul className="space-y-2 font-medium" style={{ color: colors.textSecondary }}>
                     <li>• Complete all required fields</li>
                     <li>• Upload clear information</li>
                     <li>• Set realistic delivery radius</li>
                   </ul>
                 </div>
               </div>
-            </Card>
+            </div>
           </div>
-
-          {/* Main Content */}
-          <div className="flex-1 space-y-6">
-            {/* Profile Section */}
+          <div className="flex-1">
             {activeSection === "profile" && (
               <SectionLayout
                 title="Profile Details"
-                description="Basic business information and social profiles"
-                icon={UserIcon}
-                onNext={() => {
-                  markSectionComplete("profile");
-                  setActiveSection("location");
-                }}
+                icon={UserCircleIcon}
+                onNext={goToNextSection}
+                onBack={goToPreviousSection}
                 isFirst={true}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputField
-                    label="Company Name"
-                    value={formData.profile.companyName}
-                    onChange={(e) => updateField("profile", "companyName", e.target.value)}
-                    placeholder="Enter company name"
-                    required
-                  />
-                  <InputField
-                    label="Landline"
-                    value={formData.profile.landline}
-                    onChange={(e) => updateField("profile", "landline", e.target.value)}
-                    placeholder="+971 X XXX XXXX"
-                  />
-                  <InputField
-                    label="WhatsApp Number"
-                    value={formData.profile.whatsapp}
-                    onChange={(e) => updateField("profile", "whatsapp", e.target.value)}
-                    placeholder="+971 XX XXX XXXX"
-                    required
-                  />
-                  <InputField
-                    label="Website"
-                    value={formData.profile.website}
-                    onChange={(e) => updateField("profile", "website", e.target.value)}
-                    placeholder="https://example.com"
-                  />
-                  <InputField
-                    label="Facebook"
-                    value={formData.profile.facebook}
-                    onChange={(e) => updateField("profile", "facebook", e.target.value)}
-                    placeholder="https://facebook.com/yourpage"
-                  />
-                  <InputField
-                    label="Instagram"
-                    value={formData.profile.instagram}
-                    onChange={(e) => updateField("profile", "instagram", e.target.value)}
-                    placeholder="https://instagram.com/yourprofile"
-                  />
+                <div className="bg-gray-50 border border-gray-400 rounded-xl p-6 space-y-6 shadow-sm">
+                  <div className="pb-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Company Information</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputField
+                      label="Company Name"
+                      name="profile.companyName"
+                      register={register}
+                      errors={errors}
+                      placeholder="Enter company name"
+                      required
+                    />
+                    <InputField
+                      label="Landline"
+                      name="profile.landline"
+                      register={register}
+                      errors={errors}
+                      placeholder="+971 X XXX XXXX"
+                    />
+                    <InputField
+                      label="WhatsApp Number"
+                      name="profile.whatsapp"
+                      register={register}
+                      errors={errors}
+                      placeholder="+971 XX XXX XXXX"
+                      required
+                    />
+                    <InputField
+                      label="Website"
+                      name="profile.website"
+                      register={register}
+                      errors={errors}
+                      placeholder="https://example.com"
+                    />
+                    <InputField
+                      label="Facebook"
+                      name="profile.facebook"
+                      register={register}
+                      errors={errors}
+                      placeholder="https://facebook.com/yourpage"
+                    />
+                    <InputField
+                      label="Instagram"
+                      name="profile.instagram"
+                      register={register}
+                      errors={errors}
+                      placeholder="https://instagram.com/yourprofile"
+                    />
+                  </div>
                 </div>
               </SectionLayout>
             )}
-
-            {/* Location Section */}
             {activeSection === "location" && (
               <SectionLayout
                 title="Location & Hours"
                 description="Business location and service hours"
-                icon={LocationMarkerIcon}
-                onNext={() => {
-                  markSectionComplete("location");
-                  setActiveSection("delivery");
-                }}
-                onBack={() => setActiveSection("profile")}
+                icon={MapPinIcon}
+                onNext={goToNextSection}
+                onBack={goToPreviousSection}
               >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <TextAreaField
-                      label="Complete Address"
-                      value={formData.location.address}
-                      onChange={(e) => updateField("location", "address", e.target.value)}
-                      placeholder="Enter your complete business address"
-                      required
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <InputField
-                        label="Pickup Radius (km)"
-                        type="number"
-                        value={formData.location.pickupRadius}
-                        onChange={(e) => updateField("location", "pickupRadius", e.target.value)}
+                <div className="bg-gray-50 border border-gray-400 rounded-xl p-6 space-y-6 shadow-sm">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <TextAreaField
+                        label="Complete Address"
+                        name="location.address"
+                        register={register}
+                        errors={errors}
+                        placeholder="Enter your complete business address"
+                        required
                       />
+                      <div className="grid grid-cols-2 gap-4">
+                        <InputField
+                          label="Pickup Radius (km)"
+                          name="location.pickupRadius"
+                          register={register}
+                          errors={errors}
+                          type="number"
+                          required
+                        />
+                        <InputField
+                          label="Delivery Radius (km)"
+                          name="location.deliveryRadius"
+                          register={register}
+                          errors={errors}
+                          type="number"
+                          required
+                        />
+                      </div>
                       <InputField
-                        label="Delivery Radius (km)"
-                        type="number"
-                        value={formData.location.deliveryRadius}
-                        onChange={(e) => updateField("location", "deliveryRadius", e.target.value)}
+                        label="Landmark"
+                        name="location.landmark"
+                        register={register}
+                        errors={errors}
+                        placeholder="Nearby famous location"
                       />
                     </div>
-                    <InputField
-                      label="Landmark"
-                      value={formData.location.landmark}
-                      onChange={(e) => updateField("location", "landmark", e.target.value)}
-                      placeholder="Nearby famous location"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium mb-4" style={{ color: colors.textPrimary }}>Operating Hours</h3>
-                    <div className="space-y-3">
-                      {formData.location.operatingHours.map((day, index) => (
-                        <div key={day.day} className="flex items-center justify-between">
-                          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: colors.textPrimary }}>
-                            <input
-                              type="checkbox"
-                              checked={!day.closed}
-                              onChange={(e) => {
-                                const updated = [...formData.location.operatingHours];
-                                updated[index].closed = !e.target.checked;
-                                updateField("location", "operatingHours", updated);
-                              }}
-                              className="rounded border-gray-300 text-gray-600 focus:ring-gray-500"
-                            />
-                            {day.day}
-                          </label>
-                          {!day.closed && (
-                            <div className="flex items-center gap-2">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4" style={{ color: colors.textPrimary }}>Operating Hours</h3>
+                      <div className="space-y-3">
+                        {formValues.location?.operatingHours?.map((day, index) => (
+                          <div key={index} className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 text-sm font-medium" style={{ color: colors.textPrimary }}>
                               <input
-                                type="time"
-                                value={day.open}
+                                type="checkbox"
+                                checked={!day.closed}
                                 onChange={(e) => {
-                                  const updated = [...formData.location.operatingHours];
-                                  updated[index].open = e.target.value;
-                                  updateField("location", "operatingHours", updated);
+                                  const hours = [...formValues.location.operatingHours];
+                                  hours[index] = { ...hours[index], closed: !e.target.checked };
+                                  setValue("location.operatingHours", hours);
                                 }}
-                                className="px-2 py-1 border rounded text-sm"
-                                style={{ borderColor: colors.border, backgroundColor: colors.card }}
+                                className="rounded border-gray-400 text-gray-600 focus:ring-gray-500"
                               />
-                              <span style={{ color: colors.textSecondary }}>to</span>
-                              <input
-                                type="time"
-                                value={day.close}
-                                onChange={(e) => {
-                                  const updated = [...formData.location.operatingHours];
-                                  updated[index].close = e.target.value;
-                                  updateField("location", "operatingHours", updated);
-                                }}
-                                className="px-2 py-1 border rounded text-sm"
-                                style={{ borderColor: colors.border, backgroundColor: colors.card }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                              {day.day}
+                            </label>
+                            {!day.closed && (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="time"
+                                  value={day.open}
+                                  onChange={(e) => {
+                                    const hours = [...formValues.location.operatingHours];
+                                    hours[index] = { ...hours[index], open: e.target.value };
+                                    setValue("location.operatingHours", hours);
+                                  }}
+                                  className="px-2 py-1 border border-gray-400 rounded text-sm"
+                                  style={{ backgroundColor: colors.card }}
+                                />
+                                <span style={{ color: colors.textSecondary }}>to</span>
+                                <input
+                                  type="time"
+                                  value={day.close}
+                                  onChange={(e) => {
+                                    const hours = [...formValues.location.operatingHours];
+                                    hours[index] = { ...hours[index], close: e.target.value };
+                                    setValue("location.operatingHours", hours);
+                                  }}
+                                  className="px-2 py-1 border border-gray-400 rounded text-sm"
+                                  style={{ backgroundColor: colors.card }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               </SectionLayout>
             )}
-
-            {/* Delivery Team Section */}
-            {activeSection === "delivery" && (
+            {activeSection === "deliveryPersons" && (
               <SectionLayout
                 title="Delivery Team"
                 description="Manage your delivery personnel"
                 icon={TruckIcon}
-                onNext={() => {
-                  markSectionComplete("delivery");
-                  setActiveSection("products");
-                }}
-                onBack={() => setActiveSection("location")}
+                onNext={goToNextSection}
+                onBack={goToPreviousSection}
                 actionButton={
-                  <ActionButton
-                    onClick={() => addItem("deliveryPersons", { name: "", phone: "", vehicleType: "bike", licenseNumber: "" })}
-                  >
+                  <ActionButton onClick={addDeliveryPerson}>
                     <PlusIcon className="w-4 h-4" />
                     Add Person
                   </ActionButton>
                 }
               >
                 <div className="space-y-4">
-                  {formData.deliveryPersons.map((person, index) => (
-                    <Card key={person.id}>
+                  {formValues.deliveryPersons?.map((person, index) => (
+                    <Card key={index}>
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-medium" style={{ color: colors.textPrimary }}>
                           Delivery Person {index + 1}
                         </h3>
-                        {formData.deliveryPersons.length > 1 && (
+                        {formValues.deliveryPersons.length > 1 && (
                           <button
-                            onClick={() => removeItem("deliveryPersons", person.id)}
+                            type="button"
+                            onClick={() => removeDeliveryPerson(index)}
                             style={{ color: colors.textSecondary }}
-                            className="hover:opacity-70"
+                            className="hover:opacity-70 p-1"
                           >
                             <TrashIcon className="w-4 h-4" />
                           </button>
@@ -657,22 +980,25 @@ export default function ProfessionalBusinessSetup() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <InputField
                           label="Full Name"
-                          value={person.name}
-                          onChange={(e) => updateItem("deliveryPersons", index, "name", e.target.value)}
+                          name={`deliveryPersons.${index}.name`}
+                          register={register}
+                          errors={errors}
                           placeholder="Full name"
                           required
                         />
                         <InputField
                           label="Phone Number"
-                          value={person.phone}
-                          onChange={(e) => updateItem("deliveryPersons", index, "phone", e.target.value)}
+                          name={`deliveryPersons.${index}.phone`}
+                          register={register}
+                          errors={errors}
                           placeholder="Phone number"
                           required
                         />
                         <SelectField
                           label="Vehicle Type"
-                          value={person.vehicleType}
-                          onChange={(e) => updateItem("deliveryPersons", index, "vehicleType", e.target.value)}
+                          name={`deliveryPersons.${index}.vehicleType`}
+                          register={register}
+                          errors={errors}
                           options={[
                             { value: "bike", label: "Bike" },
                             { value: "car", label: "Car" },
@@ -683,8 +1009,9 @@ export default function ProfessionalBusinessSetup() {
                         />
                         <InputField
                           label="License Number"
-                          value={person.licenseNumber}
-                          onChange={(e) => updateItem("deliveryPersons", index, "licenseNumber", e.target.value)}
+                          name={`deliveryPersons.${index}.licenseNumber`}
+                          register={register}
+                          errors={errors}
                           placeholder="License number"
                           className="md:col-span-2"
                         />
@@ -694,54 +1021,47 @@ export default function ProfessionalBusinessSetup() {
                 </div>
               </SectionLayout>
             )}
-
-            {/* Products Section */}
             {activeSection === "products" && (
               <SectionLayout
                 title="Products / Services"
                 description="Manage your product catalog and pricing"
                 icon={TagIcon}
-                onNext={() => {
-                  markSectionComplete("products");
-                  setActiveSection("offers");
-                }}
-                onBack={() => setActiveSection("delivery")}
+                onNext={goToNextSection}
+                onBack={goToPreviousSection}
                 actionButton={
-                  <ActionButton
-                    onClick={() => addItem("products", { name: "", category: "", price: "", urgentPrice: "", specialPrice: "", imagePreview: "" })}
-                  >
+                  <ActionButton onClick={addProduct}>
                     <PlusIcon className="w-4 h-4" />
                     Add Product
                   </ActionButton>
                 }
               >
                 <div className="space-y-6">
-                  {formData.products.map((product, index) => (
-                    <Card key={product.id}>
+                  {formValues.products?.map((product, index) => (
+                    <Card key={index}>
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-medium" style={{ color: colors.textPrimary }}>
                           Product {index + 1}
                         </h3>
-                        {formData.products.length > 1 && (
+                        {formValues.products.length > 1 && (
                           <button
-                            onClick={() => removeItem("products", product.id)}
+                            type="button"
+                            onClick={() => removeProduct(index)}
                             style={{ color: colors.textSecondary }}
-                            className="hover:opacity-70"
+                            className="hover:opacity-70 p-1"
                           >
                             <TrashIcon className="w-4 h-4" />
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Product Image */}
                         <div>
                           <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
                             Product Image
                           </label>
                           <div 
-                            className="border-2 border-dashed rounded-lg p-4 text-center h-32 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ borderColor: colors.border, backgroundColor: colors.background }}
-                            onClick={() => document.getElementById(`product-image-${product.id}`).click()}
+                            className="border-2 border-dashed border-gray-400 rounded-lg p-4 text-center h-32 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ backgroundColor: colors.background }}
+                            onClick={() => document.getElementById(`product-image-${index}`).click()}
                           >
                             {product.imagePreview ? (
                               <div className="relative">
@@ -753,63 +1073,66 @@ export default function ProfessionalBusinessSetup() {
                               </div>
                             ) : (
                               <div className="text-center">
-                                <PhotographIcon className="mx-auto h-8 w-8" style={{ color: colors.textSecondary }} />
+                                <PhotoIcon className="mx-auto h-8 w-8" style={{ color: colors.textSecondary }} />
                                 <span className="mt-2 block text-sm font-medium" style={{ color: colors.textPrimary }}>
                                   Upload Image
                                 </span>
                               </div>
                             )}
                             <input
-                              id={`product-image-${product.id}`}
+                              id={`product-image-${index}`}
                               type="file"
                               className="hidden"
                               accept="image/*"
-                              onChange={(e) => handleImageUpload(product.id, e)}
+                              onChange={(e) => handleImageUpload(index, e)}
                             />
                           </div>
                         </div>
-
-                        {/* Product Details */}
                         <div className="lg:col-span-2">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <InputField
                               label="Product Name"
-                              value={product.name}
-                              onChange={(e) => updateItem("products", index, "name", e.target.value)}
+                              name={`products.${index}.name`}
+                              register={register}
+                              errors={errors}
                               placeholder="Product name"
                               required
                               className="md:col-span-2"
                             />
                             <InputField
                               label="Category"
-                              value={product.category}
-                              onChange={(e) => updateItem("products", index, "category", e.target.value)}
+                              name={`products.${index}.category`}
+                              register={register}
+                              errors={errors}
                               placeholder="Product category"
                               required
                             />
                             <InputField
                               label="Normal Price"
+                              name={`products.${index}.price`}
+                              register={register}
+                              errors={errors}
                               type="number"
                               step="0.01"
-                              value={product.price}
-                              onChange={(e) => updateItem("products", index, "price", e.target.value)}
                               placeholder="0.00"
                               required
                             />
                             <InputField
                               label="Urgent Price"
+                              name={`products.${index}.urgentPrice`}
+                              register={register}
+                              errors={errors}
                               type="number"
                               step="0.01"
-                              value={product.urgentPrice}
-                              onChange={(e) => updateItem("products", index, "urgentPrice", e.target.value)}
                               placeholder="0.00"
                             />
                             <InputField
                               label="Special Price"
+                              name={`products.${index}.specialPrice`}
+                              register={register}
+                              errors={errors}
                               type="number"
                               step="0.01"
-                              value={product.specialPrice}
-                              onChange={(e) => updateItem("products", index, "specialPrice", e.target.value)}
                               placeholder="0.00"
                             />
                           </div>
@@ -820,255 +1143,301 @@ export default function ProfessionalBusinessSetup() {
                 </div>
               </SectionLayout>
             )}
-
-            {/* Offers & Discounts Section */}
-            {activeSection === "offers" && (
-              <SectionLayout
-                title="Offers & Discounts"
-                description="Configure special offers and discount strategies"
-                icon={GiftIcon}
-                onNext={() => {
-                  markSectionComplete("offers");
-                  setActiveSection("delivery-charges");
-                }}
-                onBack={() => setActiveSection("products")}
-              >
-                {/* Product Bundles */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium" style={{ color: colors.textPrimary }}>Product Bundles</h3>
-                    <ActionButton
-                      onClick={() => addNestedItem("offers", "bundles", { name: "", description: "", price: "", discount: "", isActive: true })}
-                    >
-                      <PlusIcon className="w-4 h-4" />
-                      Add Bundle
-                    </ActionButton>
-                  </div>
-                  <div className="space-y-4">
-                    {formData.offers.bundles.map((bundle, index) => (
-                      <Card key={bundle.id}>
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium" style={{ color: colors.textPrimary }}>Bundle {index + 1}</h4>
-                          {formData.offers.bundles.length > 1 && (
+              {activeSection === "offers" && (
+                <SectionLayout
+                  title="Offers & Discounts"
+                  description="Configure special offers and discount strategies"
+                  icon={GiftIcon}
+                  onNext={goToNextSection}
+                  onBack={goToPreviousSection}
+                >
+                  {/* Product Bundles */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium" style={{ color: colors.textPrimary }}>
+                        Product Bundles
+                      </h3>
+                      <ActionButton onClick={addBundle}>
+                        <PlusIcon className="w-4 h-4" />
+                        Add Bundle
+                      </ActionButton>
+                    </div>
+                    <div className="space-y-4">
+                      {formValues.offers?.bundles?.map((bundle, index) => (
+                        <Card key={index}>
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-medium" style={{ color: colors.textPrimary }}>
+                              Bundle {index + 1}
+                            </h3>
                             <button
-                              onClick={() => removeNestedItem("offers", "bundles", bundle.id)}
+                              type="button"
+                              onClick={() => {
+                                const current = getValues("offers.bundles");
+                                setValue(
+                                  "offers.bundles",
+                                  current.filter((_, i) => i !== index)
+                                );
+                              }}
                               style={{ color: colors.textSecondary }}
-                              className="hover:opacity-70"
+                              className="hover:opacity-70 p-1"
                             >
                               <TrashIcon className="w-4 h-4" />
                             </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <InputField
-                            label="Bundle Name"
-                            value={bundle.name}
-                            onChange={(e) => updateNestedItem("offers", "bundles", index, "name", e.target.value)}
-                            placeholder="e.g., Family Combo"
-                            required
-                          />
-                          <InputField
-                            label="Bundle Price"
-                            type="number"
-                            step="0.01"
-                            value={bundle.price}
-                            onChange={(e) => updateNestedItem("offers", "bundles", index, "price", e.target.value)}
-                            placeholder="0.00"
-                            required
-                          />
-                          <TextAreaField
-                            label="Description"
-                            value={bundle.description}
-                            onChange={(e) => updateNestedItem("offers", "bundles", index, "description", e.target.value)}
-                            placeholder="Describe this bundle offer..."
-                            className="md:col-span-2"
-                          />
-                        </div>
-                      </Card>
-                    ))}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InputField
+                              label="Bundle Name"
+                              name={`offers.bundles.${index}.name`}
+                              register={register}
+                              errors={errors}
+                              placeholder="e.g., Family Combo"
+                              required
+                            />
+                            <InputField
+                              label="Bundle Price"
+                              name={`offers.bundles.${index}.price`}
+                              register={register}
+                              errors={errors}
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              required
+                            />
+                            <TextAreaField
+                              label="Description"
+                              name={`offers.bundles.${index}.description`}
+                              register={register}
+                              errors={errors}
+                              placeholder="Describe this bundle offer..."
+                              className="md:col-span-2"
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      {formValues.offers?.bundles?.length === 0 && (
+                        <Card>
+                          <div className="text-center py-8" style={{ color: colors.textSecondary }}>
+                            <p>No bundles added yet. Click "Add Bundle" to create one.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Date-wise Offers */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium" style={{ color: colors.textPrimary }}>Date-wise Offers</h3>
-                    <ActionButton
-                      onClick={() => addNestedItem("offers", "dateOffers", { name: "", description: "", startDate: "", endDate: "", discountType: "percentage", discountValue: "", minOrder: "", isActive: true })}
-                    >
-                      <PlusIcon className="w-4 h-4" />
-                      Add Offer
-                    </ActionButton>
-                  </div>
-                  <div className="space-y-4">
-                    {formData.offers.dateOffers.map((offer, index) => (
-                      <Card key={offer.id}>
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium" style={{ color: colors.textPrimary }}>Special Offer {index + 1}</h4>
-                          {formData.offers.dateOffers.length > 1 && (
+                  {/* Date-wise Offers */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium" style={{ color: colors.textPrimary }}>
+                        Date-wise Offers
+                      </h3>
+                      <ActionButton onClick={addDateOffer}>
+                        <PlusIcon className="w-4 h-4" />
+                        Add Offer
+                      </ActionButton>
+                    </div>
+                    <div className="space-y-4">
+                      {formValues.offers?.dateOffers?.map((offer, index) => (
+                        <Card key={index}>
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-medium" style={{ color: colors.textPrimary }}>
+                              Date Offer {index + 1}
+                            </h3>
                             <button
-                              onClick={() => removeNestedItem("offers", "dateOffers", offer.id)}
+                              type="button"
+                              onClick={() => {
+                                const current = getValues("offers.dateOffers");
+                                setValue(
+                                  "offers.dateOffers",
+                                  current.filter((_, i) => i !== index)
+                                );
+                              }}
                               style={{ color: colors.textSecondary }}
-                              className="hover:opacity-70"
+                              className="hover:opacity-70 p-1"
                             >
                               <TrashIcon className="w-4 h-4" />
                             </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <InputField
-                            label="Offer Name"
-                            value={offer.name}
-                            onChange={(e) => updateNestedItem("offers", "dateOffers", index, "name", e.target.value)}
-                            placeholder="e.g., Weekend Special"
-                            required
-                          />
-                          <SelectField
-                            label="Discount Type"
-                            value={offer.discountType}
-                            onChange={(e) => updateNestedItem("offers", "dateOffers", index, "discountType", e.target.value)}
-                            options={[
-                              { value: "percentage", label: "Percentage (%)" },
-                              { value: "fixed", label: "Fixed Amount" }
-                            ]}
-                          />
-                          <InputField
-                            label="Start Date"
-                            type="date"
-                            value={offer.startDate}
-                            onChange={(e) => updateNestedItem("offers", "dateOffers", index, "startDate", e.target.value)}
-                            required
-                          />
-                          <InputField
-                            label="End Date"
-                            type="date"
-                            value={offer.endDate}
-                            onChange={(e) => updateNestedItem("offers", "dateOffers", index, "endDate", e.target.value)}
-                            required
-                          />
-                          <InputField
-                            label="Discount Value"
-                            type="number"
-                            value={offer.discountValue}
-                            onChange={(e) => updateNestedItem("offers", "dateOffers", index, "discountValue", e.target.value)}
-                            placeholder={offer.discountType === 'percentage' ? '10' : '50'}
-                            required
-                          />
-                          <InputField
-                            label="Minimum Order"
-                            type="number"
-                            step="0.01"
-                            value={offer.minOrder}
-                            onChange={(e) => updateNestedItem("offers", "dateOffers", index, "minOrder", e.target.value)}
-                            placeholder="0.00"
-                          />
-                        </div>
-                      </Card>
-                    ))}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InputField
+                              label="Offer Name"
+                              name={`offers.dateOffers.${index}.name`}
+                              register={register}
+                              errors={errors}
+                              placeholder="e.g., Weekend Special"
+                              required
+                            />
+                            <SelectField
+                              label="Discount Type"
+                              name={`offers.dateOffers.${index}.discountType`}
+                              register={register}
+                              errors={errors}
+                              options={[
+                                { value: "percentage", label: "Percentage (%)" },
+                                { value: "fixed", label: "Fixed Amount" }
+                              ]}
+                            />
+                            <InputField
+                              label="Start Date"
+                              name={`offers.dateOffers.${index}.startDate`}
+                              register={register}
+                              errors={errors}
+                              type="date"
+                              required
+                            />
+                            <InputField
+                              label="End Date"
+                              name={`offers.dateOffers.${index}.endDate`}
+                              register={register}
+                              errors={errors}
+                              type="date"
+                              required
+                            />
+                            <InputField
+                              label="Discount Value"
+                              name={`offers.dateOffers.${index}.discountValue`}
+                              register={register}
+                              errors={errors}
+                              type="number"
+                              placeholder="10"
+                              required
+                            />
+                            <InputField
+                              label="Minimum Order"
+                              name={`offers.dateOffers.${index}.minOrder`}
+                              register={register}
+                              errors={errors}
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      {formValues.offers?.dateOffers?.length === 0 && (
+                        <Card>
+                          <div className="text-center py-8" style={{ color: colors.textSecondary }}>
+                            <p>No date offers added yet. Click "Add Offer" to create one.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Amount-based Discounts */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium" style={{ color: colors.textPrimary }}>Amount-based Discounts</h3>
-                    <ActionButton
-                      onClick={() => addNestedItem("offers", "amountDiscounts", { minAmount: "", discountType: "percentage", discountValue: "", maxDiscount: "", isActive: true })}
-                    >
-                      <PlusIcon className="w-4 h-4" />
-                      Add Tier
-                    </ActionButton>
-                  </div>
-                  <div className="space-y-4">
-                    {formData.offers.amountDiscounts.map((discount, index) => (
-                      <Card key={discount.id}>
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium" style={{ color: colors.textPrimary }}>Tier {index + 1}</h4>
-                          {formData.offers.amountDiscounts.length > 1 && (
+                  {/* Amount-based Discounts */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium" style={{ color: colors.textPrimary }}>
+                        Amount-based Discounts
+                      </h3>
+                      <ActionButton onClick={addAmountDiscount}>
+                        <PlusIcon className="w-4 h-4" />
+                        Add Tier
+                      </ActionButton>
+                    </div>
+                    <div className="space-y-4">
+                      {formValues.offers?.amountDiscounts?.map((discount, index) => (
+                        <Card key={index}>
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-medium" style={{ color: colors.textPrimary }}>
+                              Discount Tier {index + 1}
+                            </h3>
                             <button
-                              onClick={() => removeNestedItem("offers", "amountDiscounts", discount.id)}
+                              type="button"
+                              onClick={() => {
+                                const current = getValues("offers.amountDiscounts");
+                                setValue(
+                                  "offers.amountDiscounts",
+                                  current.filter((_, i) => i !== index)
+                                );
+                              }}
                               style={{ color: colors.textSecondary }}
-                              className="hover:opacity-70"
+                              className="hover:opacity-70 p-1"
                             >
                               <TrashIcon className="w-4 h-4" />
                             </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <InputField
-                            label="Minimum Amount"
-                            type="number"
-                            step="0.01"
-                            value={discount.minAmount}
-                            onChange={(e) => updateNestedItem("offers", "amountDiscounts", index, "minAmount", e.target.value)}
-                            placeholder="100.00"
-                            required
-                          />
-                          <SelectField
-                            label="Discount Type"
-                            value={discount.discountType}
-                            onChange={(e) => updateNestedItem("offers", "amountDiscounts", index, "discountType", e.target.value)}
-                            options={[
-                              { value: "percentage", label: "Percentage (%)" },
-                              { value: "fixed", label: "Fixed Amount" }
-                            ]}
-                          />
-                          <InputField
-                            label="Discount Value"
-                            type="number"
-                            value={discount.discountValue}
-                            onChange={(e) => updateNestedItem("offers", "amountDiscounts", index, "discountValue", e.target.value)}
-                            placeholder={discount.discountType === 'percentage' ? '10' : '50'}
-                            required
-                          />
-                          <InputField
-                            label="Max Discount"
-                            type="number"
-                            step="0.01"
-                            value={discount.maxDiscount}
-                            onChange={(e) => updateNestedItem("offers", "amountDiscounts", index, "maxDiscount", e.target.value)}
-                            placeholder="0.00"
-                          />
-                        </div>
-                      </Card>
-                    ))}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <InputField
+                              label="Minimum Amount"
+                              name={`offers.amountDiscounts.${index}.minAmount`}
+                              register={register}
+                              errors={errors}
+                              type="number"
+                              step="0.01"
+                              placeholder="100.00"
+                              required
+                            />
+                            <SelectField
+                              label="Discount Type"
+                              name={`offers.amountDiscounts.${index}.discountType`}
+                              register={register}
+                              errors={errors}
+                              options={[
+                                { value: "percentage", label: "Percentage (%)" },
+                                { value: "fixed", label: "Fixed Amount" }
+                              ]}
+                            />
+                            <InputField
+                              label="Discount Value"
+                              name={`offers.amountDiscounts.${index}.discountValue`}
+                              register={register}
+                              errors={errors}
+                              type="number"
+                              placeholder="10"
+                              required
+                            />
+                            <InputField
+                              label="Max Discount"
+                              name={`offers.amountDiscounts.${index}.maxDiscount`}
+                              register={register}
+                              errors={errors}
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      {formValues.offers?.amountDiscounts?.length === 0 && (
+                        <Card>
+                          <div className="text-center py-8" style={{ color: colors.textSecondary }}>
+                            <p>No discount tiers added yet. Click "Add Tier" to create one.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </SectionLayout>
-            )}
+                </SectionLayout>
+              )}
 
             {/* Delivery Charges Section */}
-            {activeSection === "delivery-charges" && (
+            {activeSection === "deliveryCharges" && (
               <SectionLayout
                 title="Delivery Charges"
                 description="Configure delivery charges for different areas"
                 icon={CurrencyDollarIcon}
-                onNext={() => {
-                  markSectionComplete("delivery-charges");
-                  setActiveSection("promotions");
-                }}
-                onBack={() => setActiveSection("offers")}
+                onNext={goToNextSection}
+                onBack={goToPreviousSection}
                 actionButton={
-                  <ActionButton
-                    onClick={() => addItem("deliveryCharges", { area: "", baseCharge: "", additionalCharge: "", freeDeliveryAbove: "", estimatedTime: "", isActive: true })}
-                  >
+                  <ActionButton onClick={addDeliveryCharge}>
                     <PlusIcon className="w-4 h-4" />
                     Add Area
                   </ActionButton>
                 }
               >
                 <div className="space-y-4">
-                  {formData.deliveryCharges.map((area, index) => (
-                    <Card key={area.id}>
-                      <div className="flex items-center justify-between mb-4">
+                  {formValues.deliveryCharges?.map((area, index) => (
+                    <Card key={index}>
+                      <div className="flex justify-between items-center mb-4">
                         <h3 className="font-medium" style={{ color: colors.textPrimary }}>
                           Area {index + 1}
                         </h3>
-                        {formData.deliveryCharges.length > 1 && (
+                        {formValues.deliveryCharges.length > 1 && (
                           <button
-                            onClick={() => removeItem("deliveryCharges", area.id)}
+                            type="button"
+                            onClick={() => removeDeliveryCharge(index)}
                             style={{ color: colors.textSecondary }}
-                            className="hover:opacity-70"
+                            className="hover:opacity-70 p-1"
                           >
                             <TrashIcon className="w-4 h-4" />
                           </button>
@@ -1077,76 +1446,52 @@ export default function ProfessionalBusinessSetup() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <InputField
                           label="Area Name"
-                          value={area.area}
-                          onChange={(e) => updateItem("deliveryCharges", index, "area", e.target.value)}
+                          name={`deliveryCharges.${index}.area`}
+                          register={register}
+                          errors={errors}
                           placeholder="e.g., Downtown, Business Bay"
                           required
                         />
                         <InputField
                           label="Base Charge (AED)"
+                          name={`deliveryCharges.${index}.baseCharge`}
+                          register={register}
+                          errors={errors}
                           type="number"
                           step="0.01"
-                          value={area.baseCharge}
-                          onChange={(e) => updateItem("deliveryCharges", index, "baseCharge", e.target.value)}
                           placeholder="15.00"
                           required
                         />
                         <InputField
                           label="Additional Charge (AED)"
+                          name={`deliveryCharges.${index}.additionalCharge`}
+                          register={register}
+                          errors={errors}
                           type="number"
                           step="0.01"
-                          value={area.additionalCharge}
-                          onChange={(e) => updateItem("deliveryCharges", index, "additionalCharge", e.target.value)}
                           placeholder="5.00"
                         />
                         <InputField
                           label="Free Delivery Above (AED)"
+                          name={`deliveryCharges.${index}.freeDeliveryAbove`}
+                          register={register}
+                          errors={errors}
                           type="number"
                           step="0.01"
-                          value={area.freeDeliveryAbove}
-                          onChange={(e) => updateItem("deliveryCharges", index, "freeDeliveryAbove", e.target.value)}
                           placeholder="100.00"
                         />
                         <InputField
                           label="Estimated Time (minutes)"
+                          name={`deliveryCharges.${index}.estimatedTime`}
+                          register={register}
+                          errors={errors}
                           type="number"
-                          value={area.estimatedTime}
-                          onChange={(e) => updateItem("deliveryCharges", index, "estimatedTime", e.target.value)}
                           placeholder="45"
                         />
-                        <div className="flex items-center">
-                          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: colors.textPrimary }}>
-                            <input
-                              type="checkbox"
-                              checked={area.isActive}
-                              onChange={(e) => updateItem("deliveryCharges", index, "isActive", e.target.checked)}
-                              className="rounded border-gray-300 text-gray-600 focus:ring-gray-500"
-                            />
-                            Active
-                          </label>
-                        </div>
                       </div>
                     </Card>
                   ))}
                 </div>
-
-                {/* Summary Card */}
-                <Card className="mt-6" style={{ backgroundColor: colors.background }}>
-                  <h4 className="font-medium mb-2" style={{ color: colors.textPrimary }}>Delivery Charges Summary</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm" style={{ color: colors.textPrimary }}>
-                    <div>
-                      <span className="font-medium">Areas Configured:</span> {formData.deliveryCharges.length}
-                    </div>
-                    <div>
-                      <span className="font-medium">Active Areas:</span> {formData.deliveryCharges.filter(area => area.isActive).length}
-                    </div>
-                    <div>
-                      <span className="font-medium">Avg. Charge:</span> AED {
-                        (formData.deliveryCharges.reduce((sum, area) => sum + parseFloat(area.baseCharge || 0), 0) / formData.deliveryCharges.length).toFixed(2)
-                      }
-                    </div>
-                  </div>
-                </Card>
               </SectionLayout>
             )}
 
@@ -1156,15 +1501,28 @@ export default function ProfessionalBusinessSetup() {
                 title="Promotions"
                 description="Create and manage marketing promotions"
                 icon={FireIcon}
-                onNext={() => {
-                  markSectionComplete("promotions");
-                  alert("Business setup completed successfully!");
-                  navigate("/sidebar");
-                }}
-                onBack={() => setActiveSection("delivery-charges")}
+                onNext={handleSubmit(onSubmit)}
+                onBack={goToPreviousSection}
+                isLast={true}
                 actionButton={
                   <ActionButton
-                    onClick={() => addItem("promotions", { title: "", description: "", type: "banner", startDate: "", endDate: "", targetAudience: "all", priority: "medium", status: "active" })}
+                    onClick={() => {
+                      const current = getValues("promotions");
+                      setValue("promotions", [
+                        ...current,
+                        {
+                          id: Date.now(),
+                          title: "",
+                          description: "",
+                          type: "banner",
+                          startDate: "",
+                          endDate: "",
+                          targetAudience: "all",
+                          priority: "medium",
+                          status: "active",
+                        },
+                      ]);
+                    }}
                   >
                     <PlusIcon className="w-4 h-4" />
                     Add Promotion
@@ -1172,17 +1530,23 @@ export default function ProfessionalBusinessSetup() {
                 }
               >
                 <div className="space-y-4">
-                  {formData.promotions.map((promo, index) => (
-                    <Card key={promo.id}>
+                  {formValues.promotions?.map((promo, index) => (
+                    <Card key={index}>
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-medium" style={{ color: colors.textPrimary }}>
                           Promotion {index + 1}
                         </h3>
-                        {formData.promotions.length > 1 && (
+                        {formValues.promotions.length > 1 && (
                           <button
-                            onClick={() => removeItem("promotions", promo.id)}
+                            type="button"
+                            onClick={() => {
+                              const current = getValues("promotions");
+                              if (current.length > 1) {
+                                setValue("promotions", current.filter((_, i) => i !== index));
+                              }
+                            }}
                             style={{ color: colors.textSecondary }}
-                            className="hover:opacity-70"
+                            className="hover:opacity-70 p-1"
                           >
                             <TrashIcon className="w-4 h-4" />
                           </button>
@@ -1191,15 +1555,17 @@ export default function ProfessionalBusinessSetup() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputField
                           label="Promotion Title"
-                          value={promo.title}
-                          onChange={(e) => updateItem("promotions", index, "title", e.target.value)}
+                          name={`promotions.${index}.title`}
+                          register={register}
+                          errors={errors}
                           placeholder="e.g., Summer Sale, Ramadan Offer"
                           required
                         />
                         <SelectField
                           label="Promotion Type"
-                          value={promo.type}
-                          onChange={(e) => updateItem("promotions", index, "type", e.target.value)}
+                          name={`promotions.${index}.type`}
+                          register={register}
+                          errors={errors}
                           options={[
                             { value: "banner", label: "Homepage Banner" },
                             { value: "popup", label: "Website Popup" },
@@ -1211,22 +1577,25 @@ export default function ProfessionalBusinessSetup() {
                         />
                         <InputField
                           label="Start Date"
+                          name={`promotions.${index}.startDate`}
+                          register={register}
+                          errors={errors}
                           type="date"
-                          value={promo.startDate}
-                          onChange={(e) => updateItem("promotions", index, "startDate", e.target.value)}
                           required
                         />
                         <InputField
                           label="End Date"
+                          name={`promotions.${index}.endDate`}
+                          register={register}
+                          errors={errors}
                           type="date"
-                          value={promo.endDate}
-                          onChange={(e) => updateItem("promotions", index, "endDate", e.target.value)}
                           required
                         />
                         <SelectField
                           label="Target Audience"
-                          value={promo.targetAudience}
-                          onChange={(e) => updateItem("promotions", index, "targetAudience", e.target.value)}
+                          name={`promotions.${index}.targetAudience`}
+                          register={register}
+                          errors={errors}
                           options={[
                             { value: "all", label: "All Customers" },
                             { value: "new", label: "New Customers" },
@@ -1236,8 +1605,9 @@ export default function ProfessionalBusinessSetup() {
                         />
                         <SelectField
                           label="Priority"
-                          value={promo.priority}
-                          onChange={(e) => updateItem("promotions", index, "priority", e.target.value)}
+                          name={`promotions.${index}.priority`}
+                          register={register}
+                          errors={errors}
                           options={[
                             { value: "low", label: "Low" },
                             { value: "medium", label: "Medium" },
@@ -1247,8 +1617,9 @@ export default function ProfessionalBusinessSetup() {
                         />
                         <TextAreaField
                           label="Description"
-                          value={promo.description}
-                          onChange={(e) => updateItem("promotions", index, "description", e.target.value)}
+                          name={`promotions.${index}.description`}
+                          register={register}
+                          errors={errors}
                           placeholder="Describe the promotion details, terms, and conditions..."
                           className="md:col-span-2"
                         />
@@ -1256,38 +1627,11 @@ export default function ProfessionalBusinessSetup() {
                     </Card>
                   ))}
                 </div>
-
-              
               </SectionLayout>
             )}
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
-};
-
-// Helper functions for nested operations
-const addNestedItem = (section, subsection, item) => {
-  setFormData(prev => ({
-    ...prev,
-    [section]: {
-      ...prev[section],
-      [subsection]: [...prev[section][subsection], { ...item, id: Date.now() }]
-    }
-  }));
-};
-
-const removeNestedItem = (section, subsection, id) => {
-  setFormData(prev => ({
-    ...prev,
-    [section]: {
-      ...prev[section],
-      [subsection]: prev[section][subsection].length > 1 
-        ? prev[section][subsection].filter(item => item.id !== id)
-        : prev[section][subsection]
-    }
-  }));
-};
-
-export default ProfessionalBusinessSetup;
+}
