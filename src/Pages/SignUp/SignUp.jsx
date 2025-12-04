@@ -205,12 +205,12 @@ const VendorAuth = () => {
      UI
   ----------------------------------- */
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 px-4">
       <div className="relative w-full max-w-md">
         <div className="bg-white/95 rounded-3xl border border-slate-200 shadow-2xl px-8 py-10">
           {/* Logo & Heading */}
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center shadow-inner">
+            <div className="h-12 w-12 rounded-full bg-linear-to-br from-slate-200 to-slate-300 flex items-center justify-center shadow-inner">
               <span className="text-lg font-bold text-slate-800">V</span>
             </div>
             <span className="text-3xl font-semibold text-slate-900">
@@ -305,7 +305,7 @@ const VendorAuth = () => {
                   type="submit"
                   disabled={!phoneValue || sendingOtp}
                   className="w-full py-2.5 text-white font-medium rounded-lg
-                  bg-gradient-to-br from-[#808A93] to-[#95A1AC] border border-[#AAB4BC] shadow-lg
+                  bg-linear-to-br from-[#808A93] to-[#95A1AC] border border-[#AAB4BC] shadow-lg
                   disabled:opacity-50 transition"
                 >
                   {sendingOtp ? "Sending OTP..." : "Send OTP"}
@@ -345,7 +345,7 @@ const VendorAuth = () => {
                   type="submit"
                   disabled={otpValue?.length !== 6 || verifyingOtp}
                   className="w-full py-2.5 text-white font-medium rounded-lg
-                  bg-gradient-to-br from-[#808A93] to-[#95A1AC] border border-[#AAB4BC] shadow-lg
+                  bg-linear-to-br from-[#808A93] to-[#95A1AC] border border-[#AAB4BC] shadow-lg
                   disabled:opacity-50 transition"
                 >
                   {verifyingOtp ? "Verifying..." : "Verify OTP"}
