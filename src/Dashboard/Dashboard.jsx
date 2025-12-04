@@ -93,10 +93,16 @@ const Dashboard = () => {
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-2xl font-bold tracking-tight" style={{ color: colors[900] }}>
+          <h3
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: colors[900] }}
+          >
             {value}
           </h3>
-          <p className="text-sm font-medium tracking-wide" style={{ color: colors[600] }}>
+          <p
+            className="text-sm font-medium tracking-wide"
+            style={{ color: colors[600] }}
+          >
             {title}
           </p>
           {trend === "stable" && (
@@ -128,7 +134,10 @@ const Dashboard = () => {
       >
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-xl font-bold tracking-tight mb-1" style={{ color: colors[900] }}>
+            <h3
+              className="text-xl font-bold tracking-tight mb-1"
+              style={{ color: colors[900] }}
+            >
               Customer Reviews
             </h3>
             <p className="text-sm font-medium" style={{ color: colors[500] }}>
@@ -142,15 +151,25 @@ const Dashboard = () => {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <StarIcon
                     key={star}
-                    className={`w-5 h-5 ${star <= Math.floor(dashboardData.customerReview) ? "text-yellow-400" : "text-gray-300"}`}
+                    className={`w-5 h-5 ${
+                      star <= Math.floor(dashboardData.customerReview)
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
                   />
                 ))}
               </div>
-              <span className="text-2xl font-bold" style={{ color: colors[900] }}>
+              <span
+                className="text-2xl font-bold"
+                style={{ color: colors[900] }}
+              >
                 {dashboardData.customerReview}
               </span>
             </div>
-            <p className="text-xs font-medium mt-1" style={{ color: colors[500] }}>
+            <p
+              className="text-xs font-medium mt-1"
+              style={{ color: colors[500] }}
+            >
               out of 5 stars
             </p>
           </div>
@@ -160,28 +179,49 @@ const Dashboard = () => {
           {reviews.map((review) => (
             <div key={review.stars} className="flex items-center gap-4">
               <div className="flex items-center gap-2 w-16">
-                <span className="text-sm font-medium w-4" style={{ color: colors[700] }}>
+                <span
+                  className="text-sm font-medium w-4"
+                  style={{ color: colors[700] }}
+                >
                   {review.stars}
                 </span>
                 <StarIcon className="w-4 h-4 text-yellow-400" />
               </div>
 
-              <div className="flex-1 rounded-full h-3 overflow-hidden" style={{ backgroundColor: colors[200] }}>
-                <div className="h-full rounded-full transition-all duration-1000" style={{ backgroundColor: colors[600], width: `${review.percentage}%` }} />
+              <div
+                className="flex-1 rounded-full h-3 overflow-hidden"
+                style={{ backgroundColor: colors[200] }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-1000"
+                  style={{
+                    backgroundColor: colors[600],
+                    width: `${review.percentage}%`,
+                  }}
+                />
               </div>
 
-              <span className="text-sm font-medium w-12 text-right" style={{ color: colors[600] }}>
+              <span
+                className="text-sm font-medium w-12 text-right"
+                style={{ color: colors[600] }}
+              >
                 {review.count}
               </span>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 pt-6 flex justify-between items-center" style={{ borderTop: `1px solid ${colors[200]}` }}>
+        <div
+          className="mt-6 pt-6 flex justify-between items-center"
+          style={{ borderTop: `1px solid ${colors[200]}` }}
+        >
           <span className="text-sm font-medium" style={{ color: colors[600] }}>
             Total reviews: 216
           </span>
-          <span className="text-sm font-semibold px-2 py-1 rounded-lg" style={{ backgroundColor: colors[100], color: colors[700] }}>
+          <span
+            className="text-sm font-semibold px-2 py-1 rounded-lg"
+            style={{ backgroundColor: colors[100], color: colors[700] }}
+          >
             +12% this month
           </span>
         </div>
@@ -198,8 +238,17 @@ const Dashboard = () => {
     ];
 
     return (
-      <div className="rounded-2xl p-6 transition-all duration-300 hover:shadow-lg" style={{ backgroundColor: colors[50], border: `1px solid ${colors[200]}` }}>
-        <h3 className="text-xl font-bold tracking-tight mb-6" style={{ color: colors[900] }}>
+      <div
+        className="rounded-2xl p-6 transition-all duration-300 hover:shadow-lg"
+        style={{
+          backgroundColor: colors[50],
+          border: `1px solid ${colors[200]}`,
+        }}
+      >
+        <h3
+          className="text-xl font-bold tracking-tight mb-6"
+          style={{ color: colors[900] }}
+        >
           Quick Actions
         </h3>
 
@@ -210,13 +259,25 @@ const Dashboard = () => {
               <button
                 key={index}
                 className="p-4 rounded-xl transition-all duration-300 hover:scale-105 group"
-                style={{ backgroundColor: colors[100], border: `1px solid ${colors[200]}` }}
+                style={{
+                  backgroundColor: colors[100],
+                  border: `1px solid ${colors[200]}`,
+                }}
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="p-2 rounded-lg transition-all duration-300" style={{ backgroundColor: colors[50], border: `1px solid ${colors[200]}` }}>
+                  <div
+                    className="p-2 rounded-lg transition-all duration-300"
+                    style={{
+                      backgroundColor: colors[50],
+                      border: `1px solid ${colors[200]}`,
+                    }}
+                  >
                     <Icon className="w-5 h-5" style={{ color: colors[700] }} />
                   </div>
-                  <span className="text-sm font-semibold text-center tracking-wide" style={{ color: colors[800] }}>
+                  <span
+                    className="text-sm font-semibold text-center tracking-wide"
+                    style={{ color: colors[800] }}
+                  >
                     {action.label}
                   </span>
                 </div>
@@ -230,11 +291,36 @@ const Dashboard = () => {
 
   const RecentActivity = () => {
     const activities = [
-      { action: "New order received", time: "2 min ago", type: "order", icon: DocumentTextIcon },
-      { action: "Delivery completed #ORD-7842", time: "15 min ago", type: "delivery", icon: CheckCircleIcon },
-      { action: "Pickup scheduled for 3:00 PM", time: "1 hour ago", type: "pickup", icon: TruckIcon },
-      { action: "Customer review received", time: "2 hours ago", type: "review", icon: StarIcon },
-      { action: "Monthly revenue target achieved", time: "4 hours ago", type: "revenue", icon: CurrencyDollarIcon },
+      {
+        action: "New order received",
+        time: "2 min ago",
+        type: "order",
+        icon: DocumentTextIcon,
+      },
+      {
+        action: "Delivery completed #ORD-7842",
+        time: "15 min ago",
+        type: "delivery",
+        icon: CheckCircleIcon,
+      },
+      {
+        action: "Pickup scheduled for 3:00 PM",
+        time: "1 hour ago",
+        type: "pickup",
+        icon: TruckIcon,
+      },
+      {
+        action: "Customer review received",
+        time: "2 hours ago",
+        type: "review",
+        icon: StarIcon,
+      },
+      {
+        action: "Monthly revenue target achieved",
+        time: "4 hours ago",
+        type: "revenue",
+        icon: CurrencyDollarIcon,
+      },
     ];
 
     const typeColors = {
@@ -246,9 +332,18 @@ const Dashboard = () => {
     };
 
     return (
-      <div className="rounded-2xl p-6 transition-all duration-300 hover:shadow-lg" style={{ backgroundColor: colors[50], border: `1px solid ${colors[200]}` }}>
+      <div
+        className="rounded-2xl p-6 transition-all duration-300 hover:shadow-lg"
+        style={{
+          backgroundColor: colors[50],
+          border: `1px solid ${colors[200]}`,
+        }}
+      >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold tracking-tight" style={{ color: colors[900] }}>
+          <h3
+            className="text-xl font-bold tracking-tight"
+            style={{ color: colors[900] }}
+          >
             Recent Activity
           </h3>
           <ClockIcon className="w-5 h-5" style={{ color: colors[500] }} />
@@ -258,18 +353,40 @@ const Dashboard = () => {
           {activities.map((activity, index) => {
             const Icon = activity.icon;
             return (
-              <div key={index} className="flex items-center gap-4 p-3 rounded-xl transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: colors[100], border: `1px solid ${colors[200]}` }}>
-                <div className="p-2 rounded-lg transition-all duration-300" style={{ backgroundColor: colors[50], border: `1px solid ${colors[200]}` }}>
-                  <Icon className="w-4 h-4" style={{ color: typeColors[activity.type] }} />
+              <div
+                key={index}
+                className="flex items-center gap-4 p-3 rounded-xl transition-all duration-200 hover:shadow-sm"
+                style={{
+                  backgroundColor: colors[100],
+                  border: `1px solid ${colors[200]}`,
+                }}
+              >
+                <div
+                  className="p-2 rounded-lg transition-all duration-300"
+                  style={{
+                    backgroundColor: colors[50],
+                    border: `1px solid ${colors[200]}`,
+                  }}
+                >
+                  <Icon
+                    className="w-4 h-4"
+                    style={{ color: typeColors[activity.type] }}
+                  />
                 </div>
 
                 <div className="flex-1">
-                  <p className="text-sm font-semibold tracking-wide" style={{ color: colors[800] }}>
+                  <p
+                    className="text-sm font-semibold tracking-wide"
+                    style={{ color: colors[800] }}
+                  >
                     {activity.action}
                   </p>
                 </div>
 
-                <span className="text-xs font-medium px-2 py-1 rounded-full" style={{ backgroundColor: colors[200], color: colors[600] }}>
+                <span
+                  className="text-xs font-medium px-2 py-1 rounded-full"
+                  style={{ backgroundColor: colors[200], color: colors[600] }}
+                >
                   {activity.time}
                 </span>
               </div>
@@ -284,27 +401,51 @@ const Dashboard = () => {
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
 
-      <div className="flex-1 p-8 transition-all duration-300 overflow-auto" style={{ backgroundColor: colors[50] }}>
+      <div
+        className="flex-1 p-8 transition-all duration-300 overflow-auto"
+        style={{ backgroundColor: colors[50] }}
+      >
         <div className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2" style={{ color: colors[900] }}>
+              <h1
+                className="text-3xl font-bold tracking-tight mb-2"
+                style={{ color: colors[900] }}
+              >
                 Vendor Dashboard
               </h1>
-              <p className="text-lg font-medium tracking-wide" style={{ color: colors[600] }}>
+              <p
+                className="text-lg font-medium tracking-wide"
+                style={{ color: colors[600] }}
+              >
                 Comprehensive overview of your delivery operations
               </p>
             </div>
 
-            <div className="px-4 py-2 rounded-xl" style={{ backgroundColor: colors[100], border: `1px solid ${colors[200]}` }}>
-              <span className="text-sm font-semibold" style={{ color: colors[700] }}>
+            <div
+              className="px-4 py-2 rounded-xl"
+              style={{
+                backgroundColor: colors[100],
+                border: `1px solid ${colors[200]}`,
+              }}
+            >
+              <span
+                className="text-sm font-semibold"
+                style={{ color: colors[700] }}
+              >
                 Last updated: Just now
               </span>
             </div>
           </div>
 
-          <div className="w-full h-1 rounded-full mb-2" style={{ backgroundColor: colors[200] }}>
-            <div className="h-full rounded-full transition-all duration-1000" style={{ backgroundColor: colors[600], width: "85%" }} />
+          <div
+            className="w-full h-1 rounded-full mb-2"
+            style={{ backgroundColor: colors[200] }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-1000"
+              style={{ backgroundColor: colors[600], width: "85%" }}
+            />
           </div>
           <div className="flex justify-between text-xs">
             <span style={{ color: colors[500] }}>Monthly performance</span>
@@ -313,12 +454,48 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
-          <StatCard title="Today's Pickups" value={dashboardData.todaysPickups} icon={TruckIcon} trend={dashboardData.trends.pickups} subtitle="+2 from yesterday" />
-          <StatCard title="Today's Deliveries" value={dashboardData.todaysDeliveries} icon={MapPinIcon} trend={dashboardData.trends.deliveries} subtitle="+4 from yesterday" />
-          <StatCard title="Active Orders" value={dashboardData.activeOrders} icon={DocumentTextIcon} trend="stable" subtitle="In progress" />
-          <StatCard title="Completed Orders" value={dashboardData.completedOrders} icon={CheckCircleIcon} trend="up" subtitle="This month" />
-          <StatCard title="Cancelled Orders" value={dashboardData.cancelledOrders} icon={XCircleIcon} trend="down" subtitle="-3% this week" />
-          <StatCard title="Monthly Revenue" value={`$${dashboardData.monthlyRevenue.toLocaleString()}`} icon={CurrencyDollarIcon} trend={dashboardData.trends.revenue} subtitle="+8.2% growth" />
+          <StatCard
+            title="Today's Pickups"
+            value={dashboardData.todaysPickups}
+            icon={TruckIcon}
+            trend={dashboardData.trends.pickups}
+            subtitle="+2 from yesterday"
+          />
+          <StatCard
+            title="Today's Deliveries"
+            value={dashboardData.todaysDeliveries}
+            icon={MapPinIcon}
+            trend={dashboardData.trends.deliveries}
+            subtitle="+4 from yesterday"
+          />
+          <StatCard
+            title="Active Orders"
+            value={dashboardData.activeOrders}
+            icon={DocumentTextIcon}
+            trend="stable"
+            subtitle="In progress"
+          />
+          <StatCard
+            title="Completed Orders"
+            value={dashboardData.completedOrders}
+            icon={CheckCircleIcon}
+            trend="up"
+            subtitle="This month"
+          />
+          <StatCard
+            title="Cancelled Orders"
+            value={dashboardData.cancelledOrders}
+            icon={XCircleIcon}
+            trend="down"
+            subtitle="-3% this week"
+          />
+          <StatCard
+            title="Monthly Revenue"
+            value={`$${dashboardData.monthlyRevenue.toLocaleString()}`}
+            icon={CurrencyDollarIcon}
+            trend={dashboardData.trends.revenue}
+            subtitle="+8.2% growth"
+          />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
