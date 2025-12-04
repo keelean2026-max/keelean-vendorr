@@ -15,38 +15,19 @@ import {
 } from "@heroicons/react/24/outline";
 
 /* ----------------- colors & schemas ----------------- */
-/* (unchanged from your version) */
 const colors = {
   background: "#FFFFFF",
   card: "#F8F9FA",
   borderLight: "#F3F4F6",
   border: "#9CA3AF",
-  borderDark: "#9CA3AF",
-  divider: "#E5E7EB",
   textPrimary: "#111827",
   textSecondary: "#374151",
-  textTertiary: "#6B7280",
-  textMuted: "#9CA3AF",
-  textDisabled: "#D1D5DB",
-  textInverse: "#FFFFFF",
-  buttonPrimary: "#374151",
-  buttonPrimaryHover: "#1F2937",
-  buttonSecondary: "#F3F4F6",
-  buttonSecondaryHover: "#E5E7EB",
-  buttonText: "#FFFFFF",
-  buttonTextSecondary: "#374151",
-  buttonDisabled: "#E5E7EB",
-  accentLight: "#F3F4F6",
-  accent: "#6B7280",
-  accentDark: "#374151",
   success: "#10B981",
   error: "#EF4444",
-  warning: "#F59E0B",
-  info: "#3B82F6",
-  hover: "rgba(0, 0, 0, 0.04)",
-  active: "rgba(0, 0, 0, 0.08)",
-  selected: "rgba(0, 0, 0, 0.12)",
+  accent: "#6B7280",
 };
+
+/* ---------- Zod schemas (updated with lat/lng/delivery radius) ---------- */
 
 const profileSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -67,11 +48,14 @@ const operatingHourSchema = z.object({
   closed: z.boolean(),
 });
 
+/* Location schema updated to include latitude, longitude and deliveryRadius */
 const locationSchema = z.object({
   address: z.string().min(10, "Address must be at least 10 characters"),
-  pickupRadius: z.coerce.number().min(1).max(50),
-  deliveryRadius: z.coerce.number().min(1).max(100),
-  landmark: z.string().min(3, "Landmark too short"),
+  latitude: z.coerce.number().min(-90, "Latitude must be >= -90").max(90, "Latitude must be <= 90"),
+  longitude: z.coerce.number().min(-180, "Longitude must be >= -180").max(180, "Longitude must be <= 180"),
+  pickupRadius: z.coerce.number().min(1, "Pickup radius must be at least 1 km").max(50, "Pickup radius max 50 km"),
+  deliveryRadius: z.coerce.number().min(1, "Delivery radius must be at least 1 km").max(100, "Delivery radius max 100 km"),
+  landmark: z.string().min(3, "Landmark too short").optional().or(z.literal("")),
   operatingHours: z.array(operatingHourSchema).length(7),
 });
 
@@ -89,6 +73,7 @@ const completeFormSchema = z.object({
   deliveryPersons: z.array(deliveryPersonSchema).min(1, "At least one delivery person is required"),
 });
 
+/* ----------------- default form values (updated latitude/longitude/deliveryRadius) ----------------- */
 const defaultValues = {
   profile: {
     companyName: "",
@@ -100,8 +85,10 @@ const defaultValues = {
   },
   location: {
     address: "",
+    latitude: 25.276987, // example default — change to '' if you want empty
+    longitude: 55.296249,
     pickupRadius: 5,
-    deliveryRadius: 15,
+    deliveryRadius: 15, // maps to delivery_radius_km in your backend
     landmark: "",
     operatingHours: Array(7)
       .fill()
@@ -153,25 +140,18 @@ const SectionLayout = ({ title, description, icon: Icon, children, onNext, onBac
   </div>
 );
 
-const InputField = ({ label, name, register, errors, placeholder, type = "text", required = false, className = "", ...props }) => {
+const InputField = ({ label, name, register, errors, placeholder, type = "text", required = false }) => {
   const error = name.split(".").reduce((obj, key) => obj?.[key], errors);
   return (
-    <div className={className}>
+    <div>
       <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>{label}{required && " *"}</label>
-      <input type={type} {...register(name, { required: required && `${label} is required` })} className={`w-full px-3 py-2 rounded-lg border border-gray-400 transition-colors focus:ring-2 focus:outline-none focus:border-gray-500 focus:ring-gray-500 ${error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-400"}`} style={{ backgroundColor: colors.card }} placeholder={placeholder} {...props} />
-      {error && <p className="mt-1 text-xs text-red-600">{error.message}</p>}
-    </div>
-  );
-};
-
-const SelectField = ({ label, name, register, errors, options, required = false, className = "" }) => {
-  const error = name.split(".").reduce((obj, key) => obj?.[key], errors);
-  return (
-    <div className={className}>
-      <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>{label}{required && " *"}</label>
-      <select {...register(name, { required: required && `${label} is required` })} className={`w-full px-3 py-2 rounded-lg border border-gray-400 transition-colors focus:ring-2 focus:outline-none focus:border-gray-500 focus:ring-gray-500 ${error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-400"}`} style={{ backgroundColor: colors.card }}>
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      <input
+        type={type}
+        {...register(name, { valueAsNumber: type === "number" })}
+        className={`w-full px-3 py-2 rounded-lg border border-gray-400 transition-colors focus:ring-2 focus:outline-none focus:border-gray-500 focus:ring-gray-500 ${error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-400"}`}
+        style={{ backgroundColor: colors.card }}
+        placeholder={placeholder}
+      />
       {error && <p className="mt-1 text-xs text-red-600">{error.message}</p>}
     </div>
   );
@@ -201,7 +181,6 @@ export default function ProfessionalBusinessSetup() {
   const sections = [
     { id: "profile", title: "Profile Details", icon: UserCircleIcon },
     { id: "location", title: "Location & Hours", icon: MapPinIcon },
-    { id: "deliveryPersons", title: "Delivery Team", icon: TruckIcon },
   ];
 
   const progress = Math.round((completedSections.size / sections.length) * 100);
@@ -219,10 +198,7 @@ export default function ProfessionalBusinessSetup() {
         sectionFields = ["profile.companyName", "profile.landline", "profile.whatsapp"];
         break;
       case "location":
-        sectionFields = ["location.address", "location.pickupRadius", "location.deliveryRadius"];
-        break;
-      case "deliveryPersons":
-        sectionFields = ["deliveryPersons", "deliveryPersons.0.name", "deliveryPersons.0.phone"];
+        sectionFields = ["location.address", "location.pickupRadius", "location.deliveryRadius", "location.latitude", "location.longitude"];
         break;
       default:
         sectionFields = [];
@@ -248,11 +224,26 @@ export default function ProfessionalBusinessSetup() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      console.log("Form submitted:", data);
-      // TODO: replace with real API call
+      // Map to backend fields: deliveryRadius -> delivery_radius_km
+      const payload = {
+        profile: data.profile,
+        location: {
+          address: data.location.address,
+          latitude: Number(data.location.latitude),
+          longitude: Number(data.location.longitude),
+          delivery_radius_km: Number(data.location.deliveryRadius),
+          pickup_radius_km: Number(data.location.pickupRadius),
+          landmark: data.location.landmark,
+          operatingHours: data.location.operatingHours,
+        },
+        deliveryPersons: data.deliveryPersons,
+      };
+
+      console.log("Prepared payload for backend:", payload);
+
+      // TODO: replace with actual API call (axios/fetch)
       await new Promise((r) => setTimeout(r, 800));
-      // navigate to sidebar after success
-      navigate("/sidebar");
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Submission failed. Try again.");
@@ -274,11 +265,30 @@ export default function ProfessionalBusinessSetup() {
     setValue("deliveryPersons", updated, { shouldValidate: true, shouldDirty: true });
   };
 
+  /* Use browser geolocation to fill latitude/longitude */
+  const useMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not available in your browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setValue("location.latitude", Number(latitude).toFixed(6), { shouldValidate: true, shouldDirty: true });
+        setValue("location.longitude", Number(longitude).toFixed(6), { shouldValidate: true, shouldDirty: true });
+      },
+      (err) => {
+        console.error(err);
+        alert("Could not get your location. Please allow location access.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // helper used for final-step button: first validate current section then submit
   const handleFinalNext = async () => {
     const ok = await validateCurrentSection();
     if (!ok) return;
-    // now submit full form (handleSubmit runs resolver/zod)
     handleSubmit(onSubmit)();
   };
 
@@ -331,7 +341,7 @@ export default function ProfessionalBusinessSetup() {
             </div>
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 space-y-6">
             {activeSection === "profile" && (
               <SectionLayout title="Profile Details" icon={UserCircleIcon} onNext={goToNextSection} onBack={goToPreviousSection} isFirst>
                 <div className="bg-gray-50 border border-gray-400 rounded-xl p-6 space-y-6 shadow-sm">
@@ -349,74 +359,172 @@ export default function ProfessionalBusinessSetup() {
             )}
 
             {activeSection === "location" && (
-              <SectionLayout title="Location & Hours" description="Business location and service hours" icon={MapPinIcon} onNext={goToNextSection} onBack={goToPreviousSection}>
-                <div className="bg-gray-50 border border-gray-400 rounded-xl p-6 space-y-6 shadow-sm">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <InputField label="Address" name="location.address" register={register} errors={errors} placeholder="Full address" required />
-                      <div className="grid grid-cols-2 gap-4">
-                        <InputField label="Pickup Radius (km)" name="location.pickupRadius" register={register} errors={errors} type="number" required />
-                        <InputField label="Delivery Radius (km)" name="location.deliveryRadius" register={register} errors={errors} type="number" required />
-                      </div>
-                      <InputField label="Landmark" name="location.landmark" register={register} errors={errors} placeholder="Nearby famous location" />
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-medium mb-4" style={{ color: colors.textPrimary }}>Operating Hours</h3>
-                      <div className="space-y-3">
-                        {formValues.location?.operatingHours?.map((day, index) => (
-                          <div key={index} className="flex items-center justify-between">
-                            <label className="flex items-center gap-2 text-sm font-medium" style={{ color: colors.textPrimary }}>
-                              <input type="checkbox" checked={!day.closed} onChange={(e) => { const hours = [...(formValues.location?.operatingHours || [])]; hours[index] = { ...hours[index], closed: !e.target.checked }; setValue("location.operatingHours", hours, { shouldValidate: true }); }} className="rounded border-gray-400 text-gray-600 focus:ring-gray-500" />
-                              {day.day}
-                            </label>
-                            {!day.closed && (
-                              <div className="flex items-center gap-2">
-                                <input type="time" value={day.open} onChange={(e) => { const hours = [...(formValues.location?.operatingHours || [])]; hours[index] = { ...hours[index], open: e.target.value }; setValue("location.operatingHours", hours, { shouldValidate: true }); }} className="px-2 py-1 border border-gray-400 rounded text-sm" style={{ backgroundColor: colors.card }} />
-                                <span style={{ color: colors.textSecondary }}>to</span>
-                                <input type="time" value={day.close} onChange={(e) => { const hours = [...(formValues.location?.operatingHours || [])]; hours[index] = { ...hours[index], close: e.target.value }; setValue("location.operatingHours", hours, { shouldValidate: true }); }} className="px-2 py-1 border border-gray-400 rounded text-sm" style={{ backgroundColor: colors.card }} />
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </SectionLayout>
-            )}
-
-            {activeSection === "deliveryPersons" && (
               <SectionLayout
-                title="Delivery Team"
-                description="Manage your delivery personnel"
-                icon={TruckIcon}
-                // if last section, clicking next will validate current section then submit
-                onNext={isLastSection ? handleFinalNext : goToNextSection}
+                title="Location & Service Area"
+                description="Set your business address and define your delivery service zone"
+                icon={MapPinIcon}
+                onNext={goToNextSection}
                 onBack={goToPreviousSection}
                 isLast={isLastSection}
-                actionButton={<ActionButton onClick={addDeliveryPerson}><PlusIcon className="w-4 h-4" /> Add Person</ActionButton>}
               >
-                <div className="space-y-4">
-                  {formValues.deliveryPersons?.map((person, index) => (
-                    <Card key={person.id ?? index}>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-medium" style={{ color: colors.textPrimary }}>Delivery Person {index + 1}</h3>
-                        {formValues.deliveryPersons.length > 1 && (
-                          <button type="button" onClick={() => removeDeliveryPerson(index)} style={{ color: colors.textSecondary }} className="hover:opacity-70 p-1">
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
+                {/* Address Section */}
+                <div className="space-y-6">
+                  <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                        <MapPinIcon className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Full Address */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Full Address <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          {...register("location.address", { required: "Address is required" })}
+                          rows="3"
+                          className={`w-full px-4 py-3 rounded-lg border ${errors.location?.address ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'} placeholder-gray-400 focus:outline-none transition-colors`}
+                          placeholder="Building name, street, area, city"
+                        />
+                        {errors.location?.address && (
+                          <p className="mt-2 text-sm text-red-600">{errors.location.address.message}</p>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <InputField label="Full Name" name={`deliveryPersons.${index}.name`} register={register} errors={errors} placeholder="Full name" required />
-                        <InputField label="Phone Number" name={`deliveryPersons.${index}.phone`} register={register} errors={errors} placeholder="Phone number" required />
-                        <SelectField label="Vehicle Type" name={`deliveryPersons.${index}.vehicleType`} register={register} errors={errors} options={[{ value: "bike", label: "Bike" }, { value: "car", label: "Car" }, { value: "scooter", label: "Scooter" }, { value: "van", label: "Van" }]} required />
-                        <InputField label="License Number" name={`deliveryPersons.${index}.licenseNumber`} register={register} errors={errors} placeholder="License number" className="md:col-span-2" />
+                      {/* Coordinates Section */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Latitude <span className="text-red-500">*</span>
+                            <span className="ml-2 text-xs text-gray-500 font-normal">(e.g., 25.276987)</span>
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                              </svg>
+                            </div>
+                            <input
+                              type="number"
+                              step="any"
+                              {...register("location.latitude", {
+                                required: "Latitude is required",
+                                min: { value: -90, message: "Latitude must be between -90 and 90" },
+                                max: { value: 90, message: "Latitude must be between -90 and 90" }
+                              })}
+                              className={`w-full pl-10 pr-4 py-3 rounded-lg border ${errors.location?.latitude ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'} placeholder-gray-400 focus:outline-none transition-colors`}
+                              placeholder="25.276987"
+                            />
+                          </div>
+                          {errors.location?.latitude && (
+                            <p className="mt-2 text-sm text-red-600">{errors.location.latitude.message}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Longitude <span className="text-red-500">*</span>
+                            <span className="ml-2 text-xs text-gray-500 font-normal">(e.g., 55.296249)</span>
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                              </svg>
+                            </div>
+                            <input
+                              type="number"
+                              step="any"
+                              {...register("location.longitude", {
+                                required: "Longitude is required",
+                                min: { value: -180, message: "Longitude must be between -180 and 180" },
+                                max: { value: 180, message: "Longitude must be between -180 and 180" }
+                              })}
+                              className={`w-full pl-10 pr-4 py-3 rounded-lg border ${errors.location?.longitude ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'} placeholder-gray-400 focus:outline-none transition-colors`}
+                              placeholder="55.296249"
+                            />
+                          </div>
+                          {errors.location?.longitude && (
+                            <p className="mt-2 text-sm text-red-600">{errors.location.longitude.message}</p>
+                          )}
+                        </div>
                       </div>
-                    </Card>
-                  ))}
+
+                    
+                    </div>
+                  </div>
+
+                  {/* Delivery Radius Section */}
+                  <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                        <TruckIcon className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Delivery Service Zone</h3>
+                        <p className="text-sm text-gray-600">Define your delivery coverage area</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6 ">
+                      {/* Delivery Radius Slider + Number Input */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2 ">
+                          Delivery Radius (km) <span className="text-red-500">*</span>
+                        </label>
+
+                        {/* Slider */}
+                        <input
+                          type="range"
+                          min="1"
+                          max="50"
+                          step="1"
+                          {...register("location.deliveryRadius")}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600"
+                        />
+
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>1 km</span>
+                          <span>25 km</span>
+                          <span>50 km</span>
+                        </div>
+
+                        {/* Display + Manual Number Input */}
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Selected radius:</span>
+                            <span className="text-lg font-bold text-gray-600">
+                              {watch("location.deliveryRadius") ?? defaultValues.location.deliveryRadius} km
+                            </span>
+                          </div>
+
+                          <input
+                            type="number"
+                            min="1"
+                            max="50"
+                            {...register("location.deliveryRadius", {
+                              required: "Delivery radius is required",
+                              min: { value: 1, message: "Minimum radius is 1 km" },
+                              max: { value: 50, message: "Maximum radius is 50 km" },
+                            })}
+                            className="mt-2 w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Error Message */}
+                        {errors.location?.deliveryRadius && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {errors.location.deliveryRadius.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </SectionLayout>
             )}
