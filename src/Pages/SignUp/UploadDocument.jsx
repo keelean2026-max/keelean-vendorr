@@ -53,6 +53,12 @@ const ProfessionalDocumentUpload = () => {
     iban: "",
     swiftCode: "",
     branchCode: "",
+    bankName: "",
+    accountHolderName: "",
+    accountNumber: "",
+    iban: "",
+    swiftCode: "",
+    branchCode: "",
   });
 
   const [activeCategory, setActiveCategory] = useState("all");
@@ -213,11 +219,11 @@ const ProfessionalDocumentUpload = () => {
       errors.push(`File size must be less than ${sizeInMB}MB`);
     }
 
-    const fileExtension = file.name.split('.').pop().toLowerCase();
+    const fileExtension = file.name.split(".").pop().toLowerCase();
     const acceptedExtensions = config.accept
-      .replace(/\./g, '')
-      .split(',')
-      .map(ext => ext.toLowerCase());
+      .replace(/\./g, "")
+      .split(",")
+      .map((ext) => ext.toLowerCase());
 
     if (!acceptedExtensions.includes(fileExtension)) {
       errors.push(`File type must be ${config.accept}`);
@@ -269,12 +275,17 @@ const ProfessionalDocumentUpload = () => {
   // -----------------------
   // Validation: Company & Bank
   // -----------------------
+  // -----------------------
+  // Validation: Company & Bank
+  // -----------------------
   const validateCompanyInfo = () => {
     const newErrors = {};
+
 
     if (!companyInfo.companyName.trim()) {
       newErrors.companyName = "Company name is required";
     }
+
 
     if (!companyInfo.tradeName.trim()) {
       newErrors.tradeName = "Trade name is required";
@@ -359,7 +370,12 @@ const ProfessionalDocumentUpload = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+
     if (!validateCompanyInfo()) {
+      return;
+    }
+
+    if (!validateBankDetails()) {
       return;
     }
 
@@ -408,6 +424,7 @@ const ProfessionalDocumentUpload = () => {
     switch (status) {
       case "uploaded":
       case "completed":
+      case "completed":
         return <CheckCircleIcon className="w-5 h-5 text-green-600" />;
       case "error":
         return <XCircleIcon className="w-5 h-5 text-red-600" />;
@@ -419,6 +436,8 @@ const ProfessionalDocumentUpload = () => {
   const getStatusLabel = (status) => {
     switch (status) {
       case "uploaded":
+      case "completed":
+        return "Completed";
       case "completed":
         return "Completed";
       case "error":
@@ -437,6 +456,7 @@ const ProfessionalDocumentUpload = () => {
               Business Document Upload
             </h1>
             <p className="text-sm text-gray-600 font-semibold mt-2">
+              Upload all required documents and provide company information
               Upload all required documents and provide company information
             </p>
           </div>
@@ -474,7 +494,9 @@ const ProfessionalDocumentUpload = () => {
                 <input
                   type="text"
                   className={`w-full px-3 py-2 rounded-lg border ${
-                    errors.companyName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                    errors.companyName
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   } text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1`}
                   placeholder="Enter company legal name"
                   value={companyInfo.companyName}
@@ -484,12 +506,14 @@ const ProfessionalDocumentUpload = () => {
                       companyName: e.target.value,
                     }));
                     if (errors.companyName) {
-                      setErrors(prev => ({ ...prev, companyName: "" }));
+                      setErrors((prev) => ({ ...prev, companyName: "" }));
                     }
                   }}
                 />
                 {errors.companyName && (
-                  <p className="mt-1 text-xs text-red-600">{errors.companyName}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.companyName}
+                  </p>
                 )}
               </div>
               <div>
@@ -499,7 +523,9 @@ const ProfessionalDocumentUpload = () => {
                 <input
                   type="text"
                   className={`w-full px-3 py-2 rounded-lg border ${
-                    errors.tradeName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                    errors.tradeName
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   } text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1`}
                   placeholder="Enter trading name"
                   value={companyInfo.tradeName}
@@ -509,12 +535,14 @@ const ProfessionalDocumentUpload = () => {
                       tradeName: e.target.value,
                     }));
                     if (errors.tradeName) {
-                      setErrors(prev => ({ ...prev, tradeName: "" }));
+                      setErrors((prev) => ({ ...prev, tradeName: "" }));
                     }
                   }}
                 />
                 {errors.tradeName && (
-                  <p className="mt-1 text-xs text-red-600">{errors.tradeName}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.tradeName}
+                  </p>
                 )}
               </div>
             </div>
@@ -696,9 +724,6 @@ const ProfessionalDocumentUpload = () => {
                                
                               </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">   
-                            </div>
-                          
                           </div>
                         </div>
                       );
@@ -713,14 +738,18 @@ const ProfessionalDocumentUpload = () => {
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-start gap-3">
-                            <span className="text-xl mt-0.5">{config.icon}</span>
+                            <span className="text-xl mt-0.5">
+                              {config.icon}
+                            </span>
                             <div>
                               <div className="flex items-center gap-1">
                                 <h3 className="text-sm font-medium text-gray-900">
                                   {config.title}
                                 </h3>
                                 {config.required && (
-                                  <span className="text-xs text-red-500">*</span>
+                                  <span className="text-xs text-red-500">
+                                    *
+                                  </span>
                                 )}
                               </div>
                               <p className="text-xs text-gray-600 mt-0.5">
@@ -729,11 +758,15 @@ const ProfessionalDocumentUpload = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                              doc.status === "uploaded" ? "bg-green-50 text-green-700" :
-                              doc.status === "error" ? "bg-red-50 text-red-700" :
-                              "bg-gray-100 text-gray-600"
-                            }`}>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                doc.status === "uploaded"
+                                  ? "bg-green-50 text-green-700"
+                                  : doc.status === "error"
+                                  ? "bg-red-50 text-red-700"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
                               {getStatusLabel(doc.status)}
                             </span>
                             {getStatusIcon(doc.status)}
@@ -769,7 +802,8 @@ const ProfessionalDocumentUpload = () => {
                                 Click to upload
                               </p>
                               <p className="mt-1 text-xs text-gray-500">
-                                {config.description.match(/\(([^)]+)\)/)?.[1] || "PDF, JPG, PNG"}
+                                {config.description.match(/\(([^)]+)\)/)?.[1] ||
+                                  "PDF, JPG, PNG"}
                               </p>
                             </div>
                             <input
@@ -779,7 +813,7 @@ const ProfessionalDocumentUpload = () => {
                               onChange={(e) =>
                                 handleFileUpload(key, e.target.files[0])
                               }
-                              ref={el => fileInputRefs.current[key] = el}
+                              ref={(el) => (fileInputRefs.current[key] = el)}
                             />
                           </label>
                         )}
@@ -811,9 +845,25 @@ const ProfessionalDocumentUpload = () => {
                     >
                       {isSubmitting ? (
                         <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           Processing...
                         </>
@@ -833,3 +883,4 @@ const ProfessionalDocumentUpload = () => {
 };
 
 export default ProfessionalDocumentUpload;
+

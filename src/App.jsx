@@ -10,20 +10,85 @@ import CustomerOrder from "./Components/dataTable/CustomerOrder";
 
 import Sidebar from "./Sidebar/Sidebar";
 import Dashboard from "./Dashboard/Dashboard";
-// import OrdersPage from "./Pages/Orders/OrdersPage"; // create or uncomment if exists
 
-function App() {
+/**
+ * Simple ProtectedRoute wrapper.
+ * Replace the `isAuthenticated` logic with your real auth check (token, context, etc).
+ */
+function ProtectedRoute({ children }) {
+  // Example auth check (change to your real logic)
+  const isAuthenticated = Boolean(localStorage.getItem("authToken")); // or use context/redux
+
+  if (!isAuthenticated) {
+    // if not authenticated, redirect to signup/login ("/")
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
+export default function App() {
   return (
     <Routes>
+      {/* Public */}
       <Route path="/" element={<SignUp />} />
-       <Route path="/upload-document" element={<UploadDocument />} />
-       <Route path="/Info" element={<Info/>}/>
-      <Route path="/Toggleline" element={<Toggleline/>}/>
-      <Route path="/CustomerOrder" element={<CustomerOrder/>}/>
-      <Route path="/sidebar" element={<Sidebar/>}/>
-      <Route path="/Dashboard" element={<Dashboard/>}/>
+
+      {/* Protected routes */}
+      <Route
+        path="/upload-document"
+        element={
+          <ProtectedRoute>
+            <UploadDocument />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/info"
+        element={
+          <ProtectedRoute>
+            <Info />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/toggleline"
+        element={
+          <ProtectedRoute>
+            <Toggleline />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/customerorder"
+        element={
+          <ProtectedRoute>
+            <CustomerOrder />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/sidebar"
+        element={
+          <ProtectedRoute>
+            <Sidebar />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* fallback for unknown routes */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
-
-export default App;
